@@ -23,7 +23,7 @@ pipeline {
                     sh """
                         ${SQLCL_PATH} ${DB_USER}/${DB_PASS}@${PROD_CONN} <<EOF
                         cd db
-                        -- Clears old checksums to ensure a clean run after your manual deletions
+                        -- Ensures a clean run after your manual deletions
                         lb clear-checksums
                         lb update -changelog-file controller.xml
                         exit
@@ -44,16 +44,20 @@ EOF
                         declare
                             l_workspace_id number;
                         begin
-                            -- Dynamically find the Workspace ID on this specific server
+                            -- 1. Dynamically find the Workspace ID on this specific server
                             select workspace_id into l_workspace_id 
                               from apex_workspaces 
                              where workspace = '${WORKSPACE_NAME}';
                             
-                            -- FORCE APEX to use the local Workspace ID to prevent ORA-20987
-                            apex_application_install.set_workspace_id(l_workspace_id);
+                            -- 2. Force the session to the correct Workspace
                             apex_util.set_security_group_id(p_security_group_id => l_workspace_id);
                             
-                            dbms_output.put_line('Target Workspace ID set to: ' || l_workspace_id);
+                            -- 3. THE FIX: Overrides the hardcoded ID inside the export files
+                            apex_application_install.set_workspace_id(l_workspace_id);
+                            apex_application_install.generate_offset;
+                            apex_application_install.set_schema('${DB_USER}');
+                            
+                            dbms_output.put_line('Target Workspace ID forced to: ' || l_workspace_id);
                         end;
                         /
                         
