@@ -1,97 +1,110 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-
--->
-<databaseChangeLog 
-        xmlns="http://www.liquibase.org/xml/ns/dbchangelog" 
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-        xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext" 
-        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
-  <include file="dept_seq_sequence.xml"/> 
-  <include file="emp_seq_sequence.xml"/> 
-  <include file="countries_table.xml"/> 
-  <include file="customer_orders_table.xml"/> 
-  <include file="demo_customers_table.xml"/> 
-  <include file="demo_orders_table.xml"/> 
-  <include file="demo_order_items_table.xml"/> 
-  <include file="demo_product_info_table.xml"/> 
-  <include file="demo_states_table.xml"/> 
-  <include file="demo_tags_table.xml"/> 
-  <include file="demo_tags_sum_table.xml"/> 
-  <include file="demo_tags_type_sum_table.xml"/> 
-  <include file="departments_table.xml"/> 
-  <include file="dept_table.xml"/> 
-  <include file="diabetes_table.xml"/> 
-  <include file="emp_table.xml"/> 
-  <include file="employees_table.xml"/> 
-  <include file="image_store_table.xml"/> 
-  <include file="jobs_table.xml"/> 
-  <include file="job_history_table.xml"/> 
-  <include file="locations_table.xml"/> 
-  <include file="maxprint_debug_requests_v2_table.xml"/> 
-  <include file="maxprint_font_table_v2_table.xml"/> 
-  <include file="online_retail_table.xml"/> 
-  <include file="psx_stocks_table.xml"/> 
-  <include file="regions_table.xml"/> 
-  <include file="simple_purchase_table.xml"/> 
-  <include file="simple_purchase_item_table.xml"/> 
-  <include file="countr_reg_fk_ref_constraint.xml"/> 
-  <include file="demo_orders_customer_id_fk_ref_constraint.xml"/> 
-  <include file="demo_order_items_fk_ref_constraint.xml"/> 
-  <include file="demo_order_items_product_id_fk_ref_constraint.xml"/> 
-  <include file="dept_loc_fk_ref_constraint.xml"/> 
-  <include file="dept_mgr_fk_ref_constraint.xml"/> 
-  <include file="emp_dept_fk_ref_constraint.xml"/> 
-  <include file="emp_job_fk_ref_constraint.xml"/> 
-  <include file="emp_manager_fk_ref_constraint.xml"/> 
-  <include file="jhist_dept_fk_ref_constraint.xml"/> 
-  <include file="jhist_emp_fk_ref_constraint.xml"/> 
-  <include file="jhist_job_fk_ref_constraint.xml"/> 
-  <include file="loc_c_id_fk_ref_constraint.xml"/> 
-  <include file="sys_c0015246_ref_constraint.xml"/> 
-  <include file="sys_c0015247_ref_constraint.xml"/> 
-  <include file="maxprint_json_utils_v2_package_spec.xml"/> 
-  <include file="maxprint_plsql_api_v2_package_spec.xml"/> 
-  <include file="maxprint_utils_v2_package_spec.xml"/> 
-  <include file="demo_customers_uk_index.xml"/> 
-  <include file="demo_cust_name_ix_index.xml"/> 
-  <include file="demo_order_items_uk_index.xml"/> 
-  <include file="demo_ord_customer_ix_index.xml"/> 
-  <include file="demo_product_info_uk_index.xml"/> 
-  <include file="dept_location_ix_index.xml"/> 
-  <include file="emp_department_ix_index.xml"/> 
-  <include file="emp_email_uk_index.xml"/> 
-  <include file="emp_job_ix_index.xml"/> 
-  <include file="emp_manager_ix_index.xml"/> 
-  <include file="emp_name_ix_index.xml"/> 
-  <include file="jhist_department_ix_index.xml"/> 
-  <include file="jhist_employee_ix_index.xml"/> 
-  <include file="jhist_job_ix_index.xml"/> 
-  <include file="loc_city_ix_index.xml"/> 
-  <include file="loc_country_ix_index.xml"/> 
-  <include file="loc_state_province_ix_index.xml"/> 
-  <include file="demo_customers_bd_trigger.xml"/> 
-  <include file="demo_customers_biu_trigger.xml"/> 
-  <include file="demo_orders_bd_trigger.xml"/> 
-  <include file="demo_orders_biu_trigger.xml"/> 
-  <include file="demo_order_items_aiud_total_trigger.xml"/> 
-  <include file="demo_order_items_bi_trigger.xml"/> 
-  <include file="demo_order_items_biu_get_price_trigger.xml"/> 
-  <include file="demo_product_info_bd_trigger.xml"/> 
-  <include file="demo_product_info_biu_trigger.xml"/> 
-  <include file="demo_tags_biu_trigger.xml"/> 
-  <include file="dept_trg1_trigger.xml"/> 
-  <include file="emp_trg1_trigger.xml"/> 
-  <include file="secure_employees_trigger.xml"/> 
-  <include file="update_job_history_trigger.xml"/> 
-  <include file="maxprint_json_utils_v2_package_body.xml"/> 
-  <include file="maxprint_plsql_api_v2_package_body.xml"/> 
-  <include file="maxprint_utils_v2_package_body.xml"/> 
-  <include file="countries_comment.xml"/> 
-  <include file="departments_comment.xml"/> 
-  <include file="employees_comment.xml"/> 
-  <include file="jobs_comment.xml"/> 
-  <include file="job_history_comment.xml"/> 
-  <include file="locations_comment.xml"/> 
-</databaseChangeLog> 
+
+  <!-- 1. SEQUENCES (Foundational) -->
+  <include file="dept_seq_sequence.xml"/>
+  <include file="emp_seq_sequence.xml"/>
+
+  <!-- 2. TABLES -->
+  <include file="countries_table.xml"/>
+  <include file="customer_orders_table.xml"/>
+  <include file="demo_customers_table.xml"/>
+  <include file="demo_orders_table.xml"/>
+  <include file="demo_order_items_table.xml"/>
+  <include file="demo_product_info_table.xml"/>
+  <include file="demo_states_table.xml"/>
+  <include file="demo_tags_table.xml"/>
+  <include file="demo_tags_sum_table.xml"/>
+  <include file="demo_tags_type_sum_table.xml"/>
+  <include file="departments_table.xml"/>
+  <include file="dept_table.xml"/>
+  <include file="diabetes_table.xml"/>
+  <include file="emp_table.xml"/>
+  <include file="employees_table.xml"/>
+  <include file="image_store_table.xml"/>
+  <include file="jobs_table.xml"/>
+  <include file="job_history_table.xml"/>
+  <include file="locations_table.xml"/>
+  <include file="maxprint_debug_requests_v2_table.xml"/>
+  <include file="maxprint_font_table_v2_table.xml"/>
+  <include file="online_retail_table.xml"/>
+  <include file="psx_stocks_table.xml"/>
+  <include file="regions_table.xml"/>
+  <include file="simple_purchase_table.xml"/>
+  <include file="simple_purchase_item_table.xml"/>
+
+  <!-- 3. FOREIGN KEYS / CONSTRAINTS -->
+  <include file="countr_reg_fk_ref_constraint.xml"/>
+  <include file="demo_orders_customer_id_fk_ref_constraint.xml"/>
+  <include file="demo_order_items_fk_ref_constraint.xml"/>
+  <include file="demo_order_items_product_id_fk_ref_constraint.xml"/>
+  <include file="dept_loc_fk_ref_constraint.xml"/>
+  <include file="dept_mgr_fk_ref_constraint.xml"/>
+  <include file="emp_dept_fk_ref_constraint.xml"/>
+  <include file="emp_job_fk_ref_constraint.xml"/>
+  <include file="emp_manager_fk_ref_constraint.xml"/>
+  <include file="jhist_dept_fk_ref_constraint.xml"/>
+  <include file="jhist_emp_fk_ref_constraint.xml"/>
+  <include file="jhist_job_fk_ref_constraint.xml"/>
+  <include file="loc_c_id_fk_ref_constraint.xml"/>
+  <include file="sys_c0015246_ref_constraint.xml"/>
+  <include file="sys_c0015247_ref_constraint.xml"/>
+
+  <!-- 4. PACKAGE SPECS -->
+  <include file="maxprint_json_utils_v2_package_spec.xml"/>
+  <include file="maxprint_plsql_api_v2_package_spec.xml"/>
+  <include file="maxprint_utils_v2_package_spec.xml"/>
+
+  <!-- 5. PACKAGE BODIES (CRITICAL: Must be BEFORE Triggers) -->
+  <include file="maxprint_json_utils_v2_package_body.xml"/>
+  <include file="maxprint_plsql_api_v2_package_body.xml"/>
+  <include file="maxprint_utils_v2_package_body.xml"/>
+
+  <!-- 6. INDEXES -->
+  <include file="demo_customers_uk_index.xml"/>
+  <include file="demo_cust_name_ix_index.xml"/>
+  <include file="demo_order_items_uk_index.xml"/>
+  <include file="demo_ord_customer_ix_index.xml"/>
+  <include file="demo_product_info_uk_index.xml"/>
+  <include file="dept_location_ix_index.xml"/>
+  <include file="emp_department_ix_index.xml"/>
+  <include file="emp_email_uk_index.xml"/>
+  <include file="emp_job_ix_index.xml"/>
+  <include file="emp_manager_ix_index.xml"/>
+  <include file="emp_name_ix_index.xml"/>
+  <include file="jhist_department_ix_index.xml"/>
+  <include file="jhist_employee_ix_index.xml"/>
+  <include file="jhist_job_ix_index.xml"/>
+  <include file="loc_city_ix_index.xml"/>
+  <include file="loc_country_ix_index.xml"/>
+  <include file="loc_state_province_ix_index.xml"/>
+
+  <!-- 7. TRIGGERS (CRITICAL: Must be LAST) -->
+  <include file="demo_customers_bd_trigger.xml"/>
+  <include file="demo_customers_biu_trigger.xml"/>
+  <include file="demo_orders_bd_trigger.xml"/>
+  <include file="demo_orders_biu_trigger.xml"/>
+  <include file="demo_order_items_aiud_total_trigger.xml"/>
+  <include file="demo_order_items_bi_trigger.xml"/>
+  <include file="demo_order_items_biu_get_price_trigger.xml"/>
+  <include file="demo_product_info_bd_trigger.xml"/>
+  <include file="demo_product_info_biu_trigger.xml"/>
+  <include file="demo_tags_biu_trigger.xml"/>
+  <include file="dept_trg1_trigger.xml"/>
+  <include file="emp_trg1_trigger.xml"/>
+  <include file="secure_employees_trigger.xml"/>
+  <include file="update_job_history_trigger.xml"/>
+
+  <!-- 8. COMMENTS -->
+  <include file="countries_comment.xml"/>
+  <include file="departments_comment.xml"/>
+  <include file="employees_comment.xml"/>
+  <include file="jobs_comment.xml"/>
+  <include file="job_history_comment.xml"/>
+  <include file="locations_comment.xml"/>
+</databaseChangeLog>
