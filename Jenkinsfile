@@ -2,6 +2,8 @@ pipeline {
     agent any
     environment {
         SQLCL_PATH = '/opt/sqlcl/bin/sql'
+        // Change this to your actual Production DB details
+        PROD_CONN  = 'test-21c.maxapex.net:1521/xepdb1' 
     }
     stages {
         stage('Checkout') {
@@ -11,14 +13,29 @@ pipeline {
         }
         stage('Deploy DB Changes') {
             steps {
-                echo 'Deploying database objects via Liquibase...'
-                // We will add the specific 'lb update' command here
+                withCredentials([usernamePassword(credentialsId: 'prod_db_creds', 
+                                 passwordVariable: 'DB_PASS', 
+                                 usernameVariable: 'DB_USER')]) {
+                    echo 'Running Liquibase Update...'
+                    sh "${SQLCL_PATH} ${DB_USER}/${DB_PASS}@${PROD_CONN} <<EOF
+                        cd db
+                        lb update -changelog-file controller.xml
+                        exit
+                    EOF"
+                }
             }
         }
         stage('Deploy APEX App') {
             steps {
-                echo 'Deploying APEX Application...'
-                // We will add the 'apex import' command here
+                withCredentials([usernamePassword(credentialsId: 'prod_db_creds', 
+                                 passwordVariable: 'DB_PASS', 
+                                 usernameVariable: 'DB_USER')]) {
+                    echo 'Importing APEX Application...'
+                    sh "${SQLCL_PATH} ${DB_USER}/${DB_PASS}@${PROD_CONN} <<EOF
+                        @apex/f103/install.sql
+                        exit
+                    EOF"
+                }
             }
         }
     }
