@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog 
+	xmlns="http://www.liquibase.org/xml/ns/dbchangelog" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext" 
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
+	http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+	<changeSet id="dd6625f81318a1aacf93db645a2fbc3286710b7c" author="(MAXPRINT_DEMO)-Generated" failOnError="false"   runOnChange="false" runAlways="false"  >
+		<n0:createOracleTrigger objectName="DEMO_TAGS_BIU" objectType="TRIGGER" ownerName="MAXPRINT_DEMO"  replaceIfExists="false" >
+			<n0:source><![CDATA[CREATE OR REPLACE EDITIONABLE TRIGGER "%USER_NAME%"."DEMO_TAGS_BIU" 
+   before insert or update on demo_tags
+   for each row
+   begin
+      if inserting then
+         if :NEW.ID is null then
+           select to_number(sys_guid(),'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
+           into :new.id
+           from dual;
+         end if;
+         :NEW.CREATED := localtimestamp;
+         :NEW.CREATED_BY := nvl(v('APP_USER'),USER);
+      end if;
+      if updating then
+         :NEW.UPDATED := localtimestamp;
+         :NEW.UPDATED_BY := nvl(v('APP_USER'),USER);
+      end if;
+end;
+
+
+
+/
+]]></n0:source>
+		</n0:createOracleTrigger>
+	</changeSet>
+</databaseChangeLog>

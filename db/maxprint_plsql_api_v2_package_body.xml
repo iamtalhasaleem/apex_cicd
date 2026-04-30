@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog 
+	xmlns="http://www.liquibase.org/xml/ns/dbchangelog" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext" 
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
+	http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+	<changeSet id="28fd81b2b0cb04aa887ab6dd3f12fa782814aa57" author="(MAXPRINT_DEMO)-Generated" failOnError="false"   runOnChange="false" runAlways="false"  >
+		<n0:createOraclePackageBody objectName="MAXPRINT_PLSQL_API_V2" objectType="PACKAGE_BODY" ownerName="MAXPRINT_DEMO"  replaceIfExists="false" >
+			<n0:source><![CDATA[CREATE OR REPLACE EDITIONABLE PACKAGE BODY "%USER_NAME%"."MAXPRINT_PLSQL_API_V2" as
+   
+    procedure Print_Payload(P_Text in out nocopy clob) is
+        V_TEMP   varchar2(4000);
+        V_CLOB   clob := P_Text;
+        V_AMOUNT number := 4000;
+        V_OFFSET number := 1;
+        V_LENGTH number := DBMS_LOB.GETLENGTH(P_Text);
+        begin
+            while V_LENGTH >= V_OFFSET
+            loop
+                V_TEMP := DBMS_LOB.SUBSTR(V_CLOB, V_AMOUNT, V_OFFSET);
+                HTP.PRN(V_TEMP);
+                V_OFFSET := V_OFFSET + LENGTH(V_TEMP);
+            end loop;
+        end;
+   
+    procedure debug_requests(
+        p_url in varchar2 default null, 
+        p_identifier in varchar2 default null, 
+        p_request in clob default null, 
+        p_debug in boolean default false
+        ) is
+            pragma autonomous_transaction;
+        begin
+            if p_debug then
+                insert into MAXPRINT_DEBUG_REQUESTS_V2 (identifier, url , request)
+                values (p_identifier,p_url,p_request);
+                commit;   
+            end if;
+        end;
+
+    procedure Dbms_Print_Payload(P_Text in out nocopy clob) is
+        V_TEMP   varchar2(4000);
+        V_CLOB   clob := P_Text;
+        V_AMOUNT number := 4000;
+        V_OFFSET number := 1;
+        V_LENGTH number := DBMS_LOB.GETLENGTH(P_Text);
+        begin
+            while V_LENGTH >= V_OFFSET
+            loop
+                V_TEMP := DBMS_LOB.SUBSTR(V_CLOB, V_AMOUNT, V_OFFSET);
+                dbms_output.put_line(V_TEMP);
+                V_OFFSET := V_OFFSET + LENGTH(V_TEMP);
+            end loop;
+        end Dbms_Print_Payload;
+
+    FUNCTION GET_APEX_DIRECTORY_CONTENT_JSON(
+        P_Directory  IN VARCHAR2,
+        P_File_Name  IN VARCHAR2,
+        P_App        IN VARCHAR2 DEFAULT v_app_id,
+        P_Workspace  IN VARCHAR2 DEFAULT v_workspace_id
+        ) RETURN CLOB IS
+
+            l_blob      BLOB;
+            l_content   CLOB;
+            l_file_name VARCHAR2(1000);
+            
+            l_cs_id     PLS_INTEGER := NLS_CHARSET_ID('AL32UTF8'); -- your JSON files are text/UTF-8  'AL32UTF8'
+            l_do        PLS_INTEGER := 1; -- dest offset
+            l_so        PLS_INTEGER := 1; -- src offset
+            l_wc        PLS_INTEGER := 0; -- lang context
+            l_warn      PLS_INTEGER;
+        
+        BEGIN
+            l_file_name := P_File_Name || '.json';
+
+            IF P_Directory = 'A' THEN
+                SELECT file_content
+                INTO l_blob
+                FROM apex_application_static_files
+                WHERE UPPER(file_name) = UPPER(l_file_name)
+                    AND application_id   = P_App;
+
+            ELSIF P_Directory = 'W' THEN
+                SELECT file_content
+                INTO l_blob
+                FROM apex_workspace_static_files
+                WHERE UPPER(file_name) = UPPER(l_file_name)
+                    AND workspace_id     = P_Workspace;
+            ELSE
+                RAISE_APPLICATION_ERROR(-20001, 'Invalid directory. Use A (Application) or W (Workspace).');
+            END IF;
+
+            DBMS_LOB.CREATETEMPORARY(l_content, TRUE);
+            DBMS_LOB.CONVERTTOCLOB(l_content, l_blob, DBMS_LOB.LOBMAXSIZE, l_do, l_so, l_cs_id, l_wc, l_warn);
+
+            RETURN l_content;
+
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                RAISE_APPLICATION_ERROR(-20002, 'JSON file not found.');
+            WHEN OTHERS THEN
+                RAISE; 
+        END;
+
+    FUNCTION get_json_from_plsql(pl_code in clob, p_datasoure_type varchar2  default 'FRS') return clob as
+        BEGIN
+            RETURN MAXPRINT_JSON_UTILS_V2.get_json_from_plsql(pl_code => pl_code , p_datasoure_type => p_datasoure_type);
+        END;
+
+    FUNCTION get_json_from_sql(p_sql in clob, p_sql_type in varchar2, p_query_master_cols varchar2 default null) return clob as 
+        begin
+           return MAXPRINT_JSON_UTILS_V2.get_json_from_sql(p_sql => p_sql, p_sql_type => p_sql_type,p_query_master_cols => p_query_master_cols);
+        end;
+
+    function get_json_from_refcursor(p_refcursor in SYS_REFCURSOR ) RETURN CLOB as
+        begin
+            return MAXPRINT_JSON_UTILS_V2.get_json_from_refcursor(p_refcursor);
+        end;
+
+    function clobToBlob( c IN CLOB ) RETURN BLOB is
+        b     BLOB;
+        warn  VARCHAR2(255);
+        cs_id NUMBER := NLS_CHARSET_ID('AL32UTF8');
+        do    NUMBER := 1; -- dest offset 
+        so    NUMBER := 1; -- src offset 
+        lc    NUMBER := 0; -- lang context
+    
+        BEGIN
+           DBMS_LOB.createTemporary(b, TRUE );
+           DBMS_LOB.CONVERTTOBLOB(b, c, DBMS_LOB.LOBMAXSIZE, do, so, cs_id, lc, warn);
+           RETURN b; 
+        
+        END clobToBlob;
+
+    function maxprint_api_call(
+        p_url                       in varchar2,
+        p_api_key                   in varchar2,
+        p_data                      in clob,
+        p_output_type               in varchar2,
+        p_template                  in clob     default null,
+        p_template_id               in varchar2 default null,
+        p_wallet_path               in varchar2 default null,
+        p_wallet_password           in varchar2 default null,
+        p_timeout                   in number   default v_timeout,
+        p_debug                     in boolean  default v_debug,
+        p_development_mode          in boolean  default v_development_mode
+        ) return clob is
+
+        l_request_body      clob;
+        l_output_file_utf8  clob;
+        l_wallet_path       varchar2(500);
+        l_wallet_password   varchar2(1000);
+   
+        begin
+
+                -- Only set Authorization header if API key is provided
+            if p_api_key is not null and trim(p_api_key) is not null then
+                apex_web_service.g_request_headers(1).name  := 'MAXPRINT-API-KEY';
+                apex_web_service.g_request_headers(1).value := p_api_key;
+
+                apex_web_service.g_request_headers(2).name  := 'Content-Type';
+                apex_web_service.g_request_headers(2).value := 'application/json';
+            else
+                -- Only Content-Type header if no API key
+                apex_web_service.g_request_headers(1).name  := 'Content-Type';
+                apex_web_service.g_request_headers(1).value := 'application/json';
+
+            end if;
+
+            sys.htp.init;
+            apex_json.initialize_clob_output;
+            apex_json.open_object;
+            apex_json.write('data', p_data);
+            apex_json.write('template', p_template);
+            apex_json.write('template_id', p_template_id);
+            apex_json.write('outputFormat', p_output_type);
+            apex_json.write('development_mode', p_development_mode);
+            apex_json.write('isTestData', TRUE);
+            apex_json.close_all;
+            l_request_body := apex_json.get_clob_output;
+            apex_json.free_output;
+
+            debug_requests(p_url => p_url,p_identifier => p_api_key,p_request => l_request_body, p_debug => p_debug);
+
+            -- if p_output_type = 'M' then
+                -- apex_json.initialize_clob_output;
+                -- apex_json.open_object;
+                -- apex_json.write('identifier' , p_api_key);
+                -- apex_json.write('url'        , p_url);
+                -- apex_json.write('request'    , l_request_body);
+                -- apex_json.write('create_time', sysdate);      
+                -- apex_json.close_all;
+                      
+                -- l_output_file_utf8  := apex_json.get_clob_output;
+                -- apex_json.free_output;
+                  
+                -- l_output_file_utf8 := apex_web_service.blob2clobbase64(clobToBlob(l_output_file_utf8));
+
+            -- else
+            --     if p_wallet_path is not null then 
+            --         l_wallet_path := 'file:' || p_wallet_path;
+            --         l_wallet_password := p_wallet_password;
+            --     end if;
+
+            --     l_output_file_utf8 := apex_web_service.make_rest_request(
+            --         p_url              => p_url,
+            --         p_http_method      => 'POST',
+            --         p_body             => l_request_body,
+            --         p_transfer_timeout => p_timeout,
+            --         p_wallet_path      => l_wallet_path,          
+            --         p_wallet_pwd       => l_wallet_password);
+            -- end if;
+            if p_wallet_path is not null then 
+                l_wallet_path := 'file:' || p_wallet_path;
+                l_wallet_password := p_wallet_password;
+            end if;
+
+            l_output_file_utf8 := apex_web_service.make_rest_request(
+                    p_url              => p_url,
+                    p_http_method      => 'POST',
+                    p_body             => l_request_body,
+                    p_transfer_timeout => p_timeout,
+                    p_wallet_path      => l_wallet_path,          
+                    p_wallet_pwd       => l_wallet_password
+                );
+       
+            return l_output_file_utf8;
+
+        end;
+
+    function maxprint_generate_report_clob(
+        p_api_key          in varchar2,
+        p_data             in clob,
+        p_output_type      in varchar2,
+        p_template         in clob     default null,
+        p_template_id      in varchar2 default null,
+        p_wallet_path      in varchar2 default null,
+        p_wallet_password  in varchar2 default null,
+        p_timeout          in number   default v_timeout,
+        p_url              in varchar2 default v_url||v_report_context,
+        p_debug            in boolean  default v_debug,
+        p_development_mode in boolean  default v_development_mode
+    ) return clob as
+    
+    begin
+        return maxprint_api_call(
+            p_url             => p_url ,
+            p_api_key         => p_api_key,
+            p_data            => p_data,
+            p_output_type     => p_output_type,
+            p_template_id     => p_template_id,
+            p_template        => p_template,
+            p_wallet_path     => p_wallet_path,
+            p_wallet_password => p_wallet_password,
+            p_timeout         => p_timeout,
+            p_debug           => p_debug,
+            p_development_mode => p_development_mode
+        );
+    end;
+
+    function maxprint_generate_report_blob(
+        p_api_key          in varchar2,
+        p_data             in clob,
+        p_output_type      in varchar2,
+        p_template         in clob     default null,
+        p_template_id      in varchar2 default null,
+        p_wallet_path      in varchar2 default null,
+        p_wallet_password  in varchar2 default null,
+        p_timeout          in number   default v_timeout,
+        p_url              in varchar2 default v_url||v_report_context,
+        p_debug            in boolean  default v_debug,
+        p_development_mode in boolean  default v_development_mode
+    ) return blob as
+    
+    begin
+        return apex_web_service.clobbase642blob(
+            maxprint_api_call(
+                p_url             => p_url ,
+                p_api_key         => p_api_key,
+                p_data            => p_data,
+                p_output_type     => p_output_type,
+                p_template_id     => p_template_id,
+                p_template        => p_template,
+                p_wallet_path     => p_wallet_path,
+                p_wallet_password => p_wallet_password,
+                p_timeout         => p_timeout,
+                p_debug           => p_debug,
+                p_development_mode => p_development_mode
+            ));
+    end;
+
+end "MAXPRINT_PLSQL_API_V2";
+/]]></n0:source>
+		</n0:createOraclePackageBody>
+	</changeSet>
+</databaseChangeLog>

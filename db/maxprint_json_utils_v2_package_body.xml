@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog 
+	xmlns="http://www.liquibase.org/xml/ns/dbchangelog" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext" 
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
+	http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+	<changeSet id="21db770b73ae211f75d0c49df9f25c76b453f112" author="(MAXPRINT_DEMO)-Generated" failOnError="false"   runOnChange="false" runAlways="false"  >
+		<n0:createOraclePackageBody objectName="MAXPRINT_JSON_UTILS_V2" objectType="PACKAGE_BODY" ownerName="MAXPRINT_DEMO"  replaceIfExists="false" >
+			<n0:source><![CDATA[CREATE OR REPLACE EDITIONABLE PACKAGE BODY "%USER_NAME%"."MAXPRINT_JSON_UTILS_V2" AS
+
+    PROCEDURE DEBUG ( P_MESSAGE IN VARCHAR2, P_LEVEL IN NUMBER) IS
+        BEGIN
+            IF APEX_APPLICATION.G_DEBUG THEN
+                APEX_DEBUG_MESSAGE.LOG_MESSAGE(P_MESSAGE => P_MESSAGE, P_LEVEL => P_LEVEL);
+            END IF;
+        END;
+
+
+    FUNCTION REPLACE_BINDS (P_SQL_IN IN CLOB) RETURN CLOB IS
+        V_SQL    CLOB;
+        V_NAMES  DBMS_SQL.VARCHAR2_TABLE;
+        V_POS    NUMBER;
+        V_LENGTH NUMBER;
+    
+        BEGIN
+            V_SQL   := P_SQL_IN;
+            V_NAMES := WWV_FLOW_UTILITIES.GET_BINDS(V_SQL);
+            
+            FOR I IN 1..V_NAMES.COUNT LOOP
+                << DO_IT_AGAIN >> V_POS    := INSTR(LOWER(V_SQL), LOWER(V_NAMES(I)));
+
+                V_LENGTH := LENGTH(LOWER(V_NAMES(I)));
+                V_SQL    := SUBSTR(V_SQL, 1, V_POS - 1) || V_NAMES(I) || SUBSTR(V_SQL, V_POS + V_LENGTH);
+                V_SQL    := REPLACE(V_SQL, UPPER(V_NAMES(I)), 'v('''|| LTRIM(V_NAMES(I), ':')|| ''')');
+
+                IF INSTR(LOWER(V_SQL), LOWER(V_NAMES(I))) > 0 THEN
+                    GOTO DO_IT_AGAIN;
+                END IF;
+
+            END LOOP;
+
+            RETURN V_SQL;
+        END REPLACE_BINDS;
+
+
+    -- FUNCTION REMOVE_LINEBREAKS (P_TEXT IN CLOB) RETURN CLOB AS
+    --     BEGIN
+    --         RETURN REPLACE(REPLACE(RTRIM(TRIM(P_TEXT), ';'), CHR(13), CHR(32)), CHR(10), CHR(32));
+    --     END;
+
+    -- New function to handle comment removal
+    FUNCTION REMOVE_COMMENTS (P_TEXT IN CLOB) RETURN CLOB AS
+        L_TEXT CLOB;
+    BEGIN
+        L_TEXT := P_TEXT;
+
+        -- 1. Remove multi-line comments /* ... */
+        -- The 'n' flag allows the '.' to match newline characters
+        L_TEXT := REGEXP_REPLACE(L_TEXT, '/\*.*?\*/', '', 1, 0, 'n');
+
+        -- 2. Remove single-line comments -- ...
+        -- The 'm' flag makes '^' and '$' match the start/end of every line
+        L_TEXT := REGEXP_REPLACE(L_TEXT, '--.*$', '', 1, 0, 'm');
+
+        RETURN L_TEXT;
+    END;
+
+
+    FUNCTION REMOVE_LINEBREAKS (P_TEXT IN CLOB) RETURN CLOB AS
+        L_TEXT CLOB;
+    BEGIN
+        -- 1. Remove all leading and trailing whitespace, including newlines
+        L_TEXT := REGEXP_REPLACE(P_TEXT, '^[[:space:]]+|[[:space:]]+$', '');
+        
+        -- 2. Remove the trailing semicolon if it exists
+        L_TEXT := RTRIM(L_TEXT, ';');
+        
+        -- 3. Remove "middle" blank lines by collapsing sequences of 2 or more 
+        --    line breaks (with optional whitespace between them) into a single line break.
+        --    This handles both Windows (\r\n) and Unix (\n) styles.
+        L_TEXT := REGEXP_REPLACE(L_TEXT, '(' || CHR(13) || '?' || CHR(10) || '[[:space:]]*){2,}', CHR(10));
+
+        -- 4. Convert all remaining single line breaks into spaces (existing logic)
+        --    This flattens the query into a single line without extra gaps.
+        RETURN REPLACE(REPLACE(L_TEXT, CHR(13), CHR(32)), CHR(10), CHR(32));
+    END;
+
+
+    FUNCTION SQL_TREATMENT (P_SQL IN CLOB) RETURN CLOB IS
+        L_CODE CLOB;
+        BEGIN
+
+            /* 1. Remove single and multiline comments first while line breaks still exist */
+            -- L_CODE := REMOVE_COMMENTS(P_SQL);
+           
+            /*Remove Semi colon, extra lines if added and flattens the query*/
+            L_CODE := REMOVE_LINEBREAKS(P_SQL);
+         
+            /*Replace bind variables wiht v()*/
+            L_CODE := REPLACE_BINDS(L_CODE);
+            RETURN L_CODE;
+        END;
+
+    FUNCTION SIMPLESQL2JSON (QUERY IN CLOB, MASTER_COLUMN_SOURCE IN VARCHAR2 DEFAULT NULL ) RETURN CLOB IS
+
+        V_WRAPPER_BEGIN       VARCHAR2(7) := 'select ';
+        V_WRAPPER_COLUMNS     VARCHAR2(1) := '*';
+        V_WRAPPER_DATASET     VARCHAR2(6) := 'from (';
+        V_WRAPPER_END         VARCHAR2(1) := ')';
+        V_MASTER_COLUMN_NAMES CLOB := MASTER_COLUMN_SOURCE;
+        V_QUERY               CLOB := QUERY;
+        V_DET_COLUMN_NAMES    VARCHAR2(4000);
+        L_CURSOR              SYS_REFCURSOR;
+        V_FINAL_QUERY         CLOB := '';
+        V_JSON_OUTPUT         CLOB;
+
+        FUNCTION CHECK_FOR_COLUMN (V_COLUMN_LIST  IN VARCHAR2, V_LOOKUP_VALUE IN VARCHAR2) RETURN BOOLEAN IS
+            V_CNT NUMBER;
+            BEGIN
+                SELECT
+                    COUNT(*)
+                INTO V_CNT
+                FROM
+                    (
+                        SELECT
+                            REGEXP_SUBSTR(V_COLUMN_LIST, '[^,]+', 1, LEVEL) COLUMN_NAME
+                        FROM
+                            DUAL
+                        CONNECT BY
+                            REGEXP_SUBSTR(V_COLUMN_LIST, '[^,]+', 1, LEVEL) IS NOT NULL
+                    )
+                WHERE
+                    COLUMN_NAME = V_LOOKUP_VALUE;
+
+                IF V_CNT > 0 THEN
+                    RETURN TRUE;
+                
+                ELSE
+                    RETURN FALSE;
+                
+                END IF;
+            
+            EXCEPTION
+                WHEN OTHERS THEN
+                    RETURN NULL;
+            END;
+
+        FUNCTION RETURN_DETAIL_COLUMNS (P_SQL IN CLOB, EXCLUSIVE_COLUMNS IN CLOB) RETURN CLOB IS
+            C              NUMBER;
+            ROWS_PROCESSED NUMBER;
+            COL_CNT        INTEGER;
+            REC_TAB        DBMS_SQL.DESC_TAB;
+            V_COLUMN_NAMES CLOB;
+            BEGIN
+                IF P_SQL IS NOT NULL THEN
+                    C              := DBMS_SQL.OPEN_CURSOR;
+                    DBMS_SQL.PARSE(C, P_SQL, DBMS_SQL.NATIVE);
+                    ROWS_PROCESSED := DBMS_SQL.EXECUTE(C);
+                    DBMS_SQL.DESCRIBE_COLUMNS(C, COL_CNT, REC_TAB);
+                    FOR J IN 1..COL_CNT LOOP
+                        IF NOT CHECK_FOR_COLUMN(EXCLUSIVE_COLUMNS, REC_TAB(J).COL_NAME) THEN
+                            V_COLUMN_NAMES := V_COLUMN_NAMES
+                                            || ','
+                                            || REC_TAB(J).COL_NAME;
+                        END IF;
+                    END LOOP;
+
+                    RETURN SUBSTR(V_COLUMN_NAMES, 2);
+                END IF;
+            END;
+
+        FUNCTION RETURN_JOIN_CONDITIONS (COLUMN_SOURCE IN VARCHAR2,MASTER_TABLE_ALLIAS IN VARCHAR2,DETAIL_TABLE_ALLIAS IN VARCHAR2) RETURN CLOB AS
+             V_RESULTANT_JOINS CLOB;
+            BEGIN
+                
+                SELECT
+                    LISTAGG(NEW_VAL, ' and ') WITHIN GROUP( ORDER BY 1)
+                INTO V_RESULTANT_JOINS
+                FROM
+                    (
+                        SELECT 'NVL( TO_CHAR('
+                        || MASTER_TABLE_ALLIAS
+                        || '.'
+                        || VAL
+                        || ') ,0) = NVL( TO_CHAR('
+                        || DETAIL_TABLE_ALLIAS
+                        || '.'
+                        || VAL
+                        || ') ,0)' NEW_VAL
+                        FROM
+                           (
+                            SELECT
+                                REGEXP_SUBSTR(COLUMN_SOURCE, '[^,]+', 1, LEVEL) VAL
+                            FROM
+                                DUAL
+                            CONNECT BY
+                                REGEXP_SUBSTR(COLUMN_SOURCE, '[^,]+', 1, LEVEL) IS NOT NULL
+                            ) X
+                    );
+
+                RETURN V_RESULTANT_JOINS;
+            END RETURN_JOIN_CONDITIONS;
+
+        FUNCTION RETURN_DYNAMIC_SQL_JSON_OBJ (COLUMN_STRING IN VARCHAR2) RETURN CLOB IS
+            V_RESULTANT_JOINS CLOB;
+        
+            BEGIN
+                SELECT
+                    LISTAGG(NEW_VAL, ' , ') WITHIN GROUP(ORDER BY 1)
+                INTO V_RESULTANT_JOINS
+                FROM
+                    (
+                    SELECT
+                        CHR(39)
+                        || VAL
+                        || CHR(39)
+                        || ' value '
+                        || VAL AS NEW_VAL
+                    FROM
+                        (
+                        SELECT
+                            REGEXP_SUBSTR(COLUMN_STRING, '[^,]+', 1, LEVEL) VAL
+                        FROM
+                            DUAL
+                        CONNECT BY
+                            REGEXP_SUBSTR(COLUMN_STRING, '[^,]+', 1, LEVEL) IS NOT NULL
+                        ) X
+                    );
+
+                RETURN V_RESULTANT_JOINS;
+            END;
+    
+    
+        BEGIN
+            IF MASTER_COLUMN_SOURCE IS NULL THEN
+                DEBUG(P_MESSAGE => 'executing query begins', P_LEVEL => 3);
+                OPEN L_CURSOR FOR V_QUERY;
+
+                APEX_JSON.INITIALIZE_CLOB_OUTPUT;
+                APEX_JSON.WRITE(L_CURSOR);
+                V_JSON_OUTPUT := APEX_JSON.GET_CLOB_OUTPUT;
+                APEX_JSON.FREE_OUTPUT;
+                DEBUG(P_MESSAGE => 'executing query ends', P_LEVEL => 3);
+            ELSE
+                V_DET_COLUMN_NAMES := RETURN_DETAIL_COLUMNS(V_WRAPPER_BEGIN
+                                                         || V_WRAPPER_COLUMNS
+                                                         || V_WRAPPER_DATASET
+                                                         || V_QUERY
+                                                         || V_WRAPPER_END, V_MASTER_COLUMN_NAMES);
+
+                V_FINAL_QUERY      := 'with x as ('
+                                      || V_QUERY
+                                      || '
+                ),
+                m as (select /*+MATERIALIZE*/  distinct '
+                                      || V_MASTER_COLUMN_NAMES
+                                      || ' from x)
+                SELECT
+                                 JSON_ARRAYAGG(JSON_OBJECT('
+                                      || RETURN_DYNAMIC_SQL_JSON_OBJ(V_MASTER_COLUMN_NAMES)
+                                      || ',
+                                                                          ''DETAIL'' VALUE(
+                                                                    SELECT
+                                                                        JSON_ARRAYAGG(JSON_OBJECT(
+                                                                                          '
+                                      || RETURN_DYNAMIC_SQL_JSON_OBJ(V_DET_COLUMN_NAMES)
+                                      || '
+                                                                                      RETURNING CLOB) RETURNING CLOB)
+                                                                    FROM
+                                                                        x v
+                                                                    where
+                                                                    '
+                                      || RETURN_JOIN_CONDITIONS(V_MASTER_COLUMN_NAMES, 'c', 'v')
+                                      || '
+                                                                )
+                                                            RETURNING CLOB)
+                                                            RETURNING CLOB)
+                                          FROM
+                                              m c ';
+
+                    DEBUG(V_FINAL_QUERY, 3);
+                    EXECUTE IMMEDIATE V_FINAL_QUERY
+                       INTO V_JSON_OUTPUT;
+                     /*v_json_output := MAXPRINT_JSON_UTILS.sql2json(v_final_query);*/
+            END IF;
+
+            RETURN V_JSON_OUTPUT;
+        END;
+
+    FUNCTION SQL2JSON (P_SQL IN CLOB) RETURN CLOB IS
+        V_SQL            CLOB;
+        V_JSON           CLOB;
+        V_CURSOR         BINARY_INTEGER;
+        V_ROWS_PROCESSED BINARY_INTEGER;
+        V_REFCUR         SYS_REFCURSOR;
+        BEGIN
+            V_SQL            := 'select '
+                   || CHR(39)
+                   || 'x'
+                   || CHR(39)
+                   || ' x , cursor('
+                   || P_SQL
+                   || ') data from dual';
+
+            V_CURSOR         := DBMS_SQL.OPEN_CURSOR;
+            DBMS_SQL.PARSE(V_CURSOR, V_SQL, DBMS_SQL.NATIVE);
+            V_ROWS_PROCESSED := DBMS_SQL.EXECUTE(V_CURSOR);
+            V_REFCUR         := DBMS_SQL.TO_REFCURSOR(V_CURSOR);
+            APEX_JSON.INITIALIZE_CLOB_OUTPUT;
+            APEX_JSON.WRITE(V_REFCUR);
+            V_JSON           := APEX_JSON.GET_CLOB_OUTPUT;
+            APEX_JSON.FREE_OUTPUT;
+            V_JSON           := TRIM(V_JSON);
+            V_JSON           := JSON_QUERY(V_JSON, '$[0].DATA' WITH CONDITIONAL WRAPPER);
+            RETURN V_JSON;
+        END;
+
+    FUNCTION GET_JSON_FROM_PLSQL (PL_CODE IN CLOB, P_DATASOURE_TYPE VARCHAR2) RETURN CLOB AS
+        L_CODE   CLOB;
+        L_SQL    CLOB;
+        L_RESULT CLOB;
+    
+        BEGIN
+            L_CODE := REMOVE_COMMENTS(PL_CODE);
+            L_CODE := REMOVE_LINEBREAKS(L_CODE);
+            DEBUG(L_CODE, 3);
+            
+            IF P_DATASOURE_TYPE = 'FRS' THEN
+                L_SQL := APEX_PLUGIN_UTIL.GET_PLSQL_FUNC_RESULT_CLOB(P_PLSQL_FUNCTION => L_CODE);
+                L_SQL := SQL_TREATMENT(L_SQL);
+                DEBUG(L_SQL, 3);
+                IF ( REGEXP_LIKE(UPPER(L_SQL), '(JSON_ARRAYAGG|JSON_ARRAY|JSON_OBJECT|JSON_OBJECTAGG)') ) THEN
+                    EXECUTE IMMEDIATE L_SQL
+                    INTO L_RESULT;
+                ELSE
+                    L_RESULT := SQL2JSON(L_SQL);
+                END IF;
+
+            END IF;
+
+            RETURN '{"report":' || L_RESULT || '}';
+        END;
+
+    FUNCTION GET_JSON_FROM_SQL (P_SQL IN CLOB,P_SQL_TYPE VARCHAR2, P_QUERY_MASTER_COLS VARCHAR2 DEFAULT NULL) RETURN CLOB AS
+        
+        L_QUERY_MASTER_COLS VARCHAR2(4000) := P_QUERY_MASTER_COLS;
+        L_SQL_QUERY         CLOB;
+        L_JSON              CLOB;
+        L_CODE              CLOB;
+    
+        BEGIN
+            L_CODE := REMOVE_COMMENTS(P_SQL);
+            L_SQL_QUERY := SQL_TREATMENT(L_CODE);
+            DEBUG(P_MESSAGE => 'SQL Type is  ' || P_SQL_TYPE || ' Query is ' || L_SQL_QUERY, P_LEVEL => 3);
+
+            IF P_SQL_TYPE = 'J' THEN
+             /*In case of JSON_OBJECT_SQL*/
+                EXECUTE IMMEDIATE L_SQL_QUERY
+                INTO L_JSON;
+            ELSIF P_SQL_TYPE = 'C' THEN
+             /*In case of CURSOR*/
+                L_JSON := SQL2JSON(L_SQL_QUERY);
+            ELSIF P_SQL_TYPE = 'S' THEN
+             /*In case of SIMPLE SQL*/
+                L_JSON := SIMPLESQL2JSON(QUERY => L_SQL_QUERY, MASTER_COLUMN_SOURCE => L_QUERY_MASTER_COLS);
+             /*------------------------------------------------------------------------------*/
+            END IF;
+
+            IF ( LENGTH(L_JSON) <= 4 ) THEN
+                RAISE NO_DATA_FOUND;
+            END IF;
+            
+            RETURN '{"report":' || L_JSON || '}';
+        
+        END GET_JSON_FROM_SQL;
+
+   
+    FUNCTION GET_JSON_FROM_REGION (P_APP_ID NUMBER,P_PAGE_ID NUMBER,P_REGION_STATIC_ID VARCHAR2) RETURN CLOB AS
+        V_REGION_ID   NUMBER;
+        V_REGION_NAME VARCHAR2(100);
+        V_REPORT      APEX_IR.T_REPORT;
+        V_QUERY       VARCHAR2(32767);
+        BEGIN
+            DEBUG(P_MESSAGE => 'get_json_from_region start: '|| P_APP_ID || ',' || P_PAGE_ID || ',' || P_REGION_STATIC_ID, P_LEVEL => 3);
+
+            SELECT 
+                REGION_ID, REGION_NAME
+            INTO
+                V_REGION_ID, V_REGION_NAME
+            FROM
+                APEX_APPLICATION_PAGE_REGIONS
+            WHERE
+                APPLICATION_ID = P_APP_ID
+                AND PAGE_ID   = P_PAGE_ID
+                AND STATIC_ID = P_REGION_STATIC_ID;
+
+            DEBUG(P_MESSAGE => 'get_json_from_region 2nd step ' || V_REGION_ID || ',' || V_REGION_NAME, P_LEVEL => 3);
+
+            V_REPORT := APEX_IR.GET_REPORT(P_PAGE_ID => P_PAGE_ID, P_REGION_ID => V_REGION_ID);
+            V_QUERY  := V_REPORT.SQL_QUERY;
+            
+            DEBUG(P_MESSAGE => 'get_json_from_region query ' || V_QUERY, P_LEVEL => 3);
+            
+            RETURN V_QUERY;
+        END;
+
+    FUNCTION GET_JSON_FROM_REFCURSOR (P_REFCURSOR IN SYS_REFCURSOR ) RETURN CLOB AS
+        VJSON   CLOB;
+        VCURSOR SYS_REFCURSOR := P_REFCURSOR;
+        BEGIN
+            APEX_JSON.INITIALIZE_CLOB_OUTPUT;
+            APEX_JSON.WRITE('report', VCURSOR);
+            VJSON := APEX_JSON.GET_CLOB_OUTPUT;
+            APEX_JSON.FREE_OUTPUT;
+            RETURN VJSON;
+        END;
+
+END "MAXPRINT_JSON_UTILS_V2";
+/]]></n0:source>
+		</n0:createOraclePackageBody>
+	</changeSet>
+</databaseChangeLog>

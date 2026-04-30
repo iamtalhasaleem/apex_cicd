@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog 
+	xmlns="http://www.liquibase.org/xml/ns/dbchangelog" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext" 
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
+	http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+	<changeSet id="be9f64d5319abf5ecc34c0025e74044553b60604" author="(MAXPRINT_DEMO)-Generated" failOnError="false"   runOnChange="false" runAlways="false"  >
+		<n0:createOracleTrigger objectName="DEMO_PRODUCT_INFO_BIU" objectType="TRIGGER" ownerName="MAXPRINT_DEMO"  replaceIfExists="false" >
+			<n0:source><![CDATA[CREATE OR REPLACE EDITIONABLE TRIGGER "%USER_NAME%"."DEMO_PRODUCT_INFO_BIU" 
+  before insert or update ON demo_product_info FOR EACH ROW
+DECLARE
+  prod_id number;
+BEGIN
+  if inserting then  
+    if :new.product_id is null then
+      select demo_prod_seq.nextval
+        into prod_id
+        from dual;
+      :new.product_id := prod_id;
+    end if;
+    if :new.tags is not null then
+          :new.tags := sample_pkg.demo_tags_cleaner(:new.tags);
+    end if;
+  end if;
+  sample_pkg.demo_tag_sync(
+    p_new_tags      => :new.tags,
+    p_old_tags      => :old.tags,
+    p_content_type  => 'PRODUCT',
+    p_content_id    => :new.product_id );
+END;
+
+
+
+/
+]]></n0:source>
+		</n0:createOracleTrigger>
+	</changeSet>
+</databaseChangeLog>

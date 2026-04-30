@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog 
+	xmlns="http://www.liquibase.org/xml/ns/dbchangelog" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext" 
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
+	http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+	<changeSet id="1e6a9c97cce73e4c901763aba518aaf39c9f6719" author="(MAXPRINT_DEMO)-Generated" failOnError="false"   runOnChange="false" runAlways="false"  >
+		<n0:createOraclePackageSpec objectName="MAXPRINT_JSON_UTILS_V2" objectType="PACKAGE_SPEC" ownerName="MAXPRINT_DEMO"  replaceIfExists="false" >
+			<n0:source><![CDATA[CREATE OR REPLACE EDITIONABLE PACKAGE "%USER_NAME%"."MAXPRINT_JSON_UTILS_V2" AS
+
+    FUNCTION GET_JSON_FROM_SQL (P_SQL IN CLOB, P_SQL_TYPE VARCHAR2, P_QUERY_MASTER_COLS VARCHAR2 DEFAULT NULL) RETURN CLOB;
+    FUNCTION GET_JSON_FROM_PLSQL (PL_CODE IN CLOB, P_DATASOURE_TYPE VARCHAR2) RETURN CLOB;
+    FUNCTION GET_JSON_FROM_REGION (P_APP_ID NUMBER,P_PAGE_ID NUMBER,P_REGION_STATIC_ID VARCHAR2) RETURN CLOB;
+    FUNCTION GET_JSON_FROM_REFCURSOR (P_REFCURSOR IN SYS_REFCURSOR) RETURN CLOB;
+
+END "MAXPRINT_JSON_UTILS_V2";
+/]]></n0:source>
+		</n0:createOraclePackageSpec>
+	</changeSet>
+</databaseChangeLog>

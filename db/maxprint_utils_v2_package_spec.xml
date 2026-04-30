@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog 
+	xmlns="http://www.liquibase.org/xml/ns/dbchangelog" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext" 
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
+	http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+	<changeSet id="f45f259c1b20a91f9d0fb5d22af1e75307a88f8e" author="(MAXPRINT_DEMO)-Generated" failOnError="false"   runOnChange="false" runAlways="false"  >
+		<n0:createOraclePackageSpec objectName="MAXPRINT_UTILS_V2" objectType="PACKAGE_SPEC" ownerName="MAXPRINT_DEMO"  replaceIfExists="false" >
+			<n0:source><![CDATA[CREATE OR REPLACE EDITIONABLE PACKAGE "%USER_NAME%"."MAXPRINT_UTILS_V2" AS
+    
+    FUNCTION GET_FILES_FROM_URL (
+        P_URL IN VARCHAR2, 
+        P_HTTP_METHOD IN VARCHAR2 DEFAULT 'GET', 
+        P_USERNAME IN VARCHAR2 DEFAULT NULL, 
+        P_PASSWORD IN VARCHAR2 DEFAULT NULL,
+        P_PROXY_OVERRIDE   IN VARCHAR2 DEFAULT NULL,
+        P_TRANSFER_TIMEOUT IN NUMBER   DEFAULT 180,
+        P_WALLET_PATH      IN VARCHAR2 DEFAULT NULL,
+        P_WALLET_PASSWORD  IN VARCHAR2 DEFAULT NULL
+    ) RETURN CLOB;
+    FUNCTION MAXPRINT_CALL (P_DYNAMIC_ACTION IN APEX_PLUGIN.T_DYNAMIC_ACTION, P_PLUGIN IN APEX_PLUGIN.T_PLUGIN) RETURN APEX_PLUGIN.T_DYNAMIC_ACTION_RENDER_RESULT;
+    FUNCTION MAXPRINT_DA_AJAX (P_DYNAMIC_ACTION IN APEX_PLUGIN.T_DYNAMIC_ACTION, P_PLUGIN IN APEX_PLUGIN.T_PLUGIN) RETURN APEX_PLUGIN.T_DYNAMIC_ACTION_AJAX_RESULT;
+
+END "MAXPRINT_UTILS_V2";
+/]]></n0:source>
+		</n0:createOraclePackageSpec>
+	</changeSet>
+</databaseChangeLog>

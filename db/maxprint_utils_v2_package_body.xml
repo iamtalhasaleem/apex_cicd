@@ -1,0 +1,455 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog 
+	xmlns="http://www.liquibase.org/xml/ns/dbchangelog" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext" 
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
+	http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+	<changeSet id="9005833f1a1cdc66562a11a308d1bed6e7cd5fa1" author="(MAXPRINT_DEMO)-Generated" failOnError="false"   runOnChange="false" runAlways="false"  >
+		<n0:createOraclePackageBody objectName="MAXPRINT_UTILS_V2" objectType="PACKAGE_BODY" ownerName="MAXPRINT_DEMO"  replaceIfExists="false" >
+			<n0:source><![CDATA[CREATE OR REPLACE EDITIONABLE PACKAGE BODY "%USER_NAME%"."MAXPRINT_UTILS_V2" AS
+
+    APPID       VARCHAR2(50)  := V('APP_ID');
+    WORKSPACEID VARCHAR2(50)  := V('WORKSPACE_ID');
+    PAGEID      VARCHAR2(100) := V('APP_PAGE_ID');
+    SESSIONID   VARCHAR2(100) := V('APP_SESSION');
+    USERID      VARCHAR2(100) := V('APP_USER');
+
+    FUNCTION GENERATE_RESPONSE_BODY (P_FILE_NAME IN VARCHAR2, P_MIME_TYPE IN VARCHAR2, P_REDIRECT_URL IN VARCHAR2, P_DATA IN CLOB) RETURN CLOB AS RESULT_DATA CLOB;
+        BEGIN
+            APEX_JSON.OPEN_OBJECT;
+            APEX_JSON.WRITE('file_name', P_FILE_NAME);
+            APEX_JSON.WRITE('mime_type', P_MIME_TYPE);
+            APEX_JSON.WRITE('redirect_url', P_REDIRECT_URL);
+            APEX_JSON.WRITE('data', P_DATA);
+            APEX_JSON.CLOSE_OBJECT;
+            RESULT_DATA := APEX_JSON.GET_CLOB_OUTPUT;
+            APEX_JSON.FREE_OUTPUT;
+            
+            RETURN RESULT_DATA;
+        END;
+
+    FUNCTION PARSE_ERROR_CODE (P_ERR_CODE IN VARCHAR2) RETURN VARCHAR2 AS
+        BEGIN
+            IF ( P_ERR_CODE = 404 ) THEN
+                RETURN 'Invalid Url';
+            ELSIF SUBSTR(P_ERR_CODE, 0, 1) = 4 AND ( P_ERR_CODE NOT IN ( 400, 403, 401 ) ) THEN
+                RETURN P_ERR_CODE || ' Maxprint Client Error';
+            ELSIF SUBSTR(P_ERR_CODE, 0, 1) = 5 THEN
+                RETURN 'Maxprint Service Unavailable';
+            ELSE
+                RETURN NULL;
+            END IF;
+        END;
+
+    FUNCTION PARSE_ERRORS (P_ERR_MSG IN VARCHAR2) RETURN VARCHAR2 AS
+        L_JSON     JSON_OBJECT_T;
+        L_FEATURES JSON_ARRAY_T;
+        
+        BEGIN
+            APEX_JSON.PARSE(P_ERR_MSG);
+            RETURN APEX_JSON.GET_VARCHAR2(P_PATH => 'error');
+        END;
+
+    PROCEDURE RAISE_ERROR (P_ERROR_MESSAGE IN VARCHAR2) IS
+        BEGIN
+            RAISE_APPLICATION_ERROR(-20010, P_ERROR_MESSAGE, FALSE);
+        END;
+
+    FUNCTION GET_TRACE_LOGS RETURN CLOB AS
+        V_STACK_TRACE CLOB;
+    
+        BEGIN
+            SELECT
+                JSON_OBJECT(
+                    'STACK_TRACE' VALUE JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'MESSAGE' VALUE MESSAGE,
+                            'LEVEL' VALUE MESSAGE_LEVEL,
+                            'EXECUTION_TIME' VALUE EXECUTION_TIME,
+                            'ELAPSED_TIME' VALUE ELAPSED_TIME,
+                            'APPLICATION_ID' VALUE APPLICATION_ID,
+                            'PAGE_ID' VALUE PAGE_ID
+                        RETURNING CLOB)
+                    RETURNING CLOB)
+                RETURNING CLOB)
+            INTO V_STACK_TRACE
+            FROM
+                APEX_DEBUG_MESSAGES
+            WHERE
+                APPLICATION_ID = APPID
+                AND SESSION_ID = SESSIONID
+                AND APEX_USER  = USERID
+                AND PAGE_ID    = PAGEID
+            ORDER BY
+                EXECUTION_TIME;
+
+            RETURN V_STACK_TRACE;
+        
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                RETURN '{"STACK_TRACE":"No Trace Found"}';
+        END;
+
+    PROCEDURE DEBUG (P_MESSAGE IN VARCHAR2, P_LEVEL IN NUMBER) IS  
+        BEGIN
+            IF APEX_APPLICATION.G_DEBUG THEN
+                APEX_DEBUG_MESSAGE.LOG_MESSAGE(P_MESSAGE => P_MESSAGE, P_LEVEL => P_LEVEL);
+            END IF;
+        END;
+
+    FUNCTION RETURN_BASE64URI (P_MIME_TYPE IN VARCHAR2, P_CHARSET   IN VARCHAR2 DEFAULT NULL ) RETURN VARCHAR2 AS
+        BEGIN
+            IF P_CHARSET IS NULL THEN
+                RETURN 'data:' || P_MIME_TYPE || ';base64,';
+            ELSE
+                RETURN 'data:' || P_MIME_TYPE || ';charset=' || P_CHARSET || ';base64,';
+            END IF;
+        END;
+
+    PROCEDURE GET_CONTENT (P_DIRECTORY IN VARCHAR2, P_FILE_NAME IN VARCHAR2, P_FILE_MIMETYPE OUT VARCHAR2, P_FILE_BASE64 OUT CLOB) IS
+        VSQL VARCHAR2(4000);
+        BEGIN
+            IF ( P_DIRECTORY = 'A' ) THEN
+                VSQL := '
+                    SELECT 
+                        mime_type, apex_web_service.blob2clobbase64(file_content) 
+                    FROM 
+                        apex_application_static_files 
+                    WHERE 
+                        upper(file_name) = ' || CHR(39) || UPPER(P_FILE_NAME) || CHR(39) || ' 
+                    AND application_id = ' || APPID || ' ';
+            ELSIF ( P_DIRECTORY = 'W' ) THEN
+                VSQL := ' 
+                    SELECT 
+                        /* NOLOGGING */ 
+                        mime_type, 
+                        apex_web_service.blob2clobbase64(file_content) 
+                    FROM 
+                        apex_workspace_static_files 
+                    WHERE 
+                        upper(file_name) = '|| CHR(39) || UPPER(P_FILE_NAME) || CHR(39) || ' 
+                    AND workspace_id = ' || WORKSPACEID || ' ';
+            END IF;
+
+            EXECUTE IMMEDIATE VSQL INTO P_FILE_MIMETYPE, P_FILE_BASE64;
+        END;
+
+    PROCEDURE EXTENSION_TO_MIMETYPE (P_EXTENTION IN VARCHAR2, P_MIMETYPE  OUT VARCHAR2) IS
+        BEGIN
+            IF P_EXTENTION = 'pdf' THEN
+                P_MIMETYPE := 'application/pdf';
+
+            ELSIF P_EXTENTION = 'html' THEN
+                P_MIMETYPE := 'text/html';
+
+            ELSIF P_EXTENTION = 'xlsx' THEN
+                P_MIMETYPE := 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+            ELSIF P_EXTENTION = 'csv' THEN
+                P_MIMETYPE := 'text/csv';
+
+            ELSIF P_EXTENTION = 'docx' THEN
+                P_MIMETYPE := 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            
+            ELSIF P_EXTENTION = 'json' THEN
+                P_MIMETYPE := 'application/json';
+
+            END IF;
+        END;
+
+    FUNCTION MIMETYPE_TO_EXTENSION (P_MIMETYPE IN VARCHAR2) RETURN VARCHAR2 AS
+        BEGIN
+            IF P_MIMETYPE = 'application/pdf' THEN
+                RETURN 'pdf';
+
+            ELSIF P_MIMETYPE = 'text/html' THEN
+                RETURN 'html';
+
+            ELSIF P_MIMETYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' THEN
+                RETURN 'docx';
+
+            END IF;
+        END;
+
+    FUNCTION GET_FILES_FROM_URL (
+        P_URL              IN VARCHAR2,
+        P_HTTP_METHOD      IN VARCHAR2 DEFAULT 'GET',
+        P_USERNAME         IN VARCHAR2 DEFAULT NULL,
+        P_PASSWORD         IN VARCHAR2 DEFAULT NULL,
+        P_PROXY_OVERRIDE   IN VARCHAR2 DEFAULT NULL,
+        P_TRANSFER_TIMEOUT IN NUMBER DEFAULT 180,
+        P_WALLET_PATH      IN VARCHAR2 DEFAULT NULL,
+        P_WALLET_PASSWORD  IN VARCHAR2 DEFAULT NULL
+        ) RETURN CLOB AS
+
+        L_CONTENT_TYPE  VARCHAR2(2000);
+        L_VCHEADERNAME  VARCHAR2(200);
+        L_VCHEADERVALUE VARCHAR2(2000);
+        L_RESULT        CLOB;
+        L_CLOB          CLOB;
+        ERR_CODE        NUMBER;
+        ERR_MSG         CLOB;
+    
+        BEGIN
+            DBMS_OUTPUT.ENABLE(1000000);
+            
+            L_CLOB   := APEX_WEB_SERVICE.MAKE_REST_REQUEST(
+                            P_URL => P_URL, 
+                            P_HTTP_METHOD => P_HTTP_METHOD, 
+                            P_USERNAME => P_USERNAME,
+                            P_PASSWORD => P_PASSWORD, 
+                            P_PROXY_OVERRIDE => P_PROXY_OVERRIDE,
+                            P_TRANSFER_TIMEOUT => P_TRANSFER_TIMEOUT, 
+                            P_WALLET_PATH => P_WALLET_PATH, 
+                            P_WALLET_PWD => P_WALLET_PASSWORD
+                        );
+
+            RETURN L_CLOB;
+        
+        EXCEPTION
+            WHEN OTHERS THEN
+                RAISE_ERROR('Unable to fetch file');
+        END GET_FILES_FROM_URL;
+
+
+    FUNCTION MAXPRINT_CALL (P_DYNAMIC_ACTION IN APEX_PLUGIN.T_DYNAMIC_ACTION, P_PLUGIN IN APEX_PLUGIN.T_PLUGIN) RETURN APEX_PLUGIN.T_DYNAMIC_ACTION_RENDER_RESULT AS L_RESULT APEX_PLUGIN.T_DYNAMIC_ACTION_RENDER_RESULT;
+        BEGIN
+            APEX_JAVASCRIPT.ADD_LIBRARY(P_NAME => 'maxprint_v2', P_DIRECTORY => P_PLUGIN.FILE_PREFIX, P_VERSION => NULL);
+            APEX_JAVASCRIPT.ADD_LIBRARY(P_NAME => 'print_v2.min', P_DIRECTORY => P_PLUGIN.FILE_PREFIX, P_VERSION => NULL);
+
+            L_RESULT.JAVASCRIPT_FUNCTION := 'maxprint_render_v2';
+            L_RESULT.AJAX_IDENTIFIER     := APEX_PLUGIN.GET_AJAX_IDENTIFIER;
+            L_RESULT.ATTRIBUTE_01        := P_DYNAMIC_ACTION.ATTRIBUTE_01;
+            L_RESULT.ATTRIBUTE_10        := P_DYNAMIC_ACTION.ATTRIBUTE_10;
+            L_RESULT.ATTRIBUTE_13        := NVL(P_DYNAMIC_ACTION.ATTRIBUTE_13, 'D');
+            RETURN L_RESULT;
+        END MAXPRINT_CALL;
+
+    FUNCTION MAXPRINT_DA_AJAX (P_DYNAMIC_ACTION IN APEX_PLUGIN.T_DYNAMIC_ACTION, P_PLUGIN IN APEX_PLUGIN.T_PLUGIN) RETURN APEX_PLUGIN.T_DYNAMIC_ACTION_AJAX_RESULT AS
+
+        -- L_API_CREATE_OR_EDIT              VARCHAR2(200) := 'https://appv2.maxprint.io/api/v1/redirect/';
+        -- L_API_RUN_REPORT               VARCHAR2(200) := 'https://appv2.maxprint.io/api/v1/report/run/template/';
+        L_API_CREATE_OR_EDIT           P_PLUGIN.ATTRIBUTE_01%TYPE := TRIM(P_PLUGIN.ATTRIBUTE_01) || '/redirect/';
+        L_API_RUN_REPORT               P_PLUGIN.ATTRIBUTE_01%TYPE := TRIM(P_PLUGIN.ATTRIBUTE_01) || '/report/run/template/';
+        L_API_DEBUG                    P_PLUGIN.ATTRIBUTE_01%TYPE := TRIM(P_PLUGIN.ATTRIBUTE_01) || '/report/debug/';
+        L_API_KEY                      P_PLUGIN.ATTRIBUTE_02%TYPE := TRIM(P_PLUGIN.ATTRIBUTE_02);
+        L_WALLET_PATH                  VARCHAR2(100) := NULL;
+        L_WALLET_KEY                   VARCHAR2(100) := NULL;
+        -- L_WALLET_PATH                  P_PLUGIN.ATTRIBUTE_03%TYPE := TRIM(P_PLUGIN.ATTRIBUTE_03);
+        -- L_WALLET_KEY                   P_PLUGIN.ATTRIBUTE_04%TYPE := TRIM(P_PLUGIN.ATTRIBUTE_04);
+        -- L_EMAIL                        P_PLUGIN.ATTRIBUTE_05%TYPE := TRIM(P_PLUGIN.ATTRIBUTE_05);
+
+        L_ACTION                       P_DYNAMIC_ACTION.ATTRIBUTE_01%TYPE := P_DYNAMIC_ACTION.ATTRIBUTE_01;
+        L_DATA_SOURCE_TYPE             P_DYNAMIC_ACTION.ATTRIBUTE_02%TYPE := TRIM(P_DYNAMIC_ACTION.ATTRIBUTE_02);
+        L_SQL_TYPE                     P_DYNAMIC_ACTION.ATTRIBUTE_03%TYPE := P_DYNAMIC_ACTION.ATTRIBUTE_03;
+        L_PL_CODE                      P_DYNAMIC_ACTION.ATTRIBUTE_04%TYPE := P_DYNAMIC_ACTION.ATTRIBUTE_04;
+        L_SQL_QUERY                    P_DYNAMIC_ACTION.ATTRIBUTE_05%TYPE := TRIM(P_DYNAMIC_ACTION.ATTRIBUTE_05);
+        L_QUERY_MASTER_COLS            P_DYNAMIC_ACTION.ATTRIBUTE_06%TYPE := TRIM(P_DYNAMIC_ACTION.ATTRIBUTE_06);
+        L_TEMPLATE_SOURCE              P_DYNAMIC_ACTION.ATTRIBUTE_07%TYPE := P_DYNAMIC_ACTION.ATTRIBUTE_07;
+        L_TEMPLATE_NAME_URL            P_DYNAMIC_ACTION.ATTRIBUTE_08%TYPE := TRIM(P_DYNAMIC_ACTION.ATTRIBUTE_08);
+        L_TEMPLATE_ID                  P_DYNAMIC_ACTION.ATTRIBUTE_09%TYPE := TRIM(P_DYNAMIC_ACTION.ATTRIBUTE_09);
+        L_OUTPUT_TYPE                  P_DYNAMIC_ACTION.ATTRIBUTE_11%TYPE := P_DYNAMIC_ACTION.ATTRIBUTE_11;
+        L_OUTPUT_FILENAME              P_DYNAMIC_ACTION.ATTRIBUTE_12%TYPE := NVL(P_DYNAMIC_ACTION.ATTRIBUTE_12, 'Output');
+
+        
+        L_TEMPLATE_JSON                CLOB := '';
+        L_JSON                         CLOB;
+        L_OUTPUT_FILE                  BLOB;
+        L_OUTPUT_FILE_MIME_TYPE        VARCHAR2(100);
+        L_OUTPUT_FILE_BASE64           CLOB;
+        L_OUTPUT_FILE_UTF8             CLOB;
+        L_LINK                         VARCHAR2(100);
+        L_ERROR_MESSAGES               CLOB;
+        L_DEVELOPMENT_MODE             BOOLEAN := FALSE;
+        L_RETURN                       APEX_PLUGIN.T_DYNAMIC_ACTION_AJAX_RESULT;
+        L_PAYLOAD                      CLOB;
+        L_RESPONSE                     CLOB;
+        L_REDIRECT_URL                 VARCHAR(4000);
+
+        BEGIN
+       
+            IF APEX_APPLICATION.G_DEBUG THEN
+                APEX_PLUGIN_UTIL.DEBUG_DYNAMIC_ACTION(P_PLUGIN => P_PLUGIN, P_DYNAMIC_ACTION => P_DYNAMIC_ACTION);
+            END IF;
+
+            IF APEX_APPLICATION.G_EDIT_COOKIE_SESSION_ID IS NOT NULL THEN
+                L_DEVELOPMENT_MODE := TRUE;
+            END IF;
+          
+            DEBUG('Initializing values', 3);
+
+            -- Check if either Template Name, URL or Template ID is provided
+            IF L_ACTION IN ('R', 'E') THEN
+                IF L_TEMPLATE_NAME_URL IS NULL AND L_TEMPLATE_ID IS NULL THEN
+                    L_OUTPUT_FILE_BASE64 := 'Template Name, Template URL or Template ID must be provided.';
+                    MAXPRINT_PLSQL_API_V2.PRINT_PAYLOAD(L_OUTPUT_FILE_BASE64);
+                    RETURN L_RETURN;
+                END IF;
+
+                -- Fetching template
+                DEBUG('Fetching template ' || L_TEMPLATE_NAME_URL || ' ' || L_TEMPLATE_ID || ' started ', 3);
+
+                BEGIN
+                    IF L_TEMPLATE_SOURCE = 'A' THEN
+                        L_TEMPLATE_JSON := MAXPRINT_PLSQL_API_V2.GET_APEX_DIRECTORY_CONTENT_JSON(P_DIRECTORY => 'A', P_FILE_NAME => UPPER(L_TEMPLATE_NAME_URL));
+                    ELSIF L_TEMPLATE_SOURCE = 'W' THEN
+                        L_TEMPLATE_JSON := MAXPRINT_PLSQL_API_V2.GET_APEX_DIRECTORY_CONTENT_JSON(P_DIRECTORY => 'W', P_FILE_NAME => UPPER(L_TEMPLATE_NAME_URL));
+                    ELSIF L_TEMPLATE_SOURCE = 'S' THEN
+                        L_TEMPLATE_JSON := GET_FILES_FROM_URL(P_URL => L_TEMPLATE_NAME_URL, P_WALLET_PATH => L_WALLET_PATH, P_WALLET_PASSWORD => L_WALLET_KEY);
+                    ELSIF L_TEMPLATE_SOURCE = 'T' THEN
+                        L_TEMPLATE_ID := TRIM(P_DYNAMIC_ACTION.ATTRIBUTE_09);
+                    END IF;
+
+                EXCEPTION
+                    WHEN NO_DATA_FOUND THEN
+                        L_OUTPUT_FILE_BASE64 := 'Template Not Found.';
+                        MAXPRINT_PLSQL_API_V2.PRINT_PAYLOAD(L_OUTPUT_FILE_BASE64);
+                        RETURN L_RETURN;
+
+                    WHEN OTHERS THEN
+                        L_OUTPUT_FILE_BASE64 := 'Error Occurred While Fetching Template.';
+                        MAXPRINT_PLSQL_API_V2.PRINT_PAYLOAD(L_OUTPUT_FILE_BASE64);
+                        RETURN L_RETURN;
+                END;
+
+            END IF;
+
+            BEGIN
+                DEBUG('Sql Data Processing Begin.', 3);
+                
+                IF ( L_DATA_SOURCE_TYPE = 'FRS' ) THEN
+                    L_JSON := MAXPRINT_JSON_UTILS_V2.GET_JSON_FROM_PLSQL(PL_CODE => L_PL_CODE, P_DATASOURE_TYPE => L_DATA_SOURCE_TYPE);
+                
+                ELSIF ( L_DATA_SOURCE_TYPE = 'SQL' ) THEN
+                    L_JSON := MAXPRINT_JSON_UTILS_V2.GET_JSON_FROM_SQL(P_SQL => L_SQL_QUERY, P_SQL_TYPE => L_SQL_TYPE, P_QUERY_MASTER_COLS => L_QUERY_MASTER_COLS);
+                
+                END IF;
+
+                DEBUG('Sql Data Processing Complete.', 3);
+            
+            EXCEPTION
+                WHEN OTHERS THEN
+                    DEBUG(SQLERRM, 2);
+                    L_OUTPUT_FILE_BASE64 := 'Error Evaluating Query. Check if you have selected correct query type';
+                    MAXPRINT_PLSQL_API_V2.PRINT_PAYLOAD(L_OUTPUT_FILE_BASE64);
+                    RETURN L_RETURN;
+            END;
+
+            EXTENSION_TO_MIMETYPE(L_OUTPUT_TYPE, L_OUTPUT_FILE_MIME_TYPE);
+            
+            IF L_ACTION IN ('C', 'E') THEN
+
+                -- IF (L_TEMPLATE_JSON IS NOT NULL) THEN
+                --     L_PAYLOAD := to_clob('{"email":"' || L_EMAIL || '","template_id":"' || L_TEMPLATE_ID || '","template":' || L_TEMPLATE_JSON || ',"key":"' || L_API_KEY || '","data_source":' || L_JSON || '}');
+                -- ELSE
+                --     L_PAYLOAD := to_clob('{"email":"' || L_EMAIL || '","template_id":"' || L_TEMPLATE_ID || '","template":"","key":"' || L_API_KEY || '","data_source":' || L_JSON || '}');
+                -- END IF;
+                IF (L_TEMPLATE_JSON IS NOT NULL) THEN
+                    L_PAYLOAD := to_clob('{"template_id":"' || L_TEMPLATE_ID || '","template":' || L_TEMPLATE_JSON || ',"key":"' || L_API_KEY || '","data_source":' || L_JSON || '}');
+                ELSE
+                    L_PAYLOAD := to_clob('{"template_id":"' || L_TEMPLATE_ID || '","template":"","key":"' || L_API_KEY || '","data_source":' || L_JSON || '}');
+                END IF;
+
+                L_RESPONSE := MAXPRINT_PLSQL_API_V2.maxprint_api_call(
+                    p_url                      => L_API_CREATE_OR_EDIT,
+                    p_data                     => L_PAYLOAD,
+                    p_output_type              => null,
+                    p_api_key                  => null
+                );
+
+                -- CHECK STATUS CODE
+                IF APEX_WEB_SERVICE.G_STATUS_CODE = 200 THEN
+                    L_REDIRECT_URL := json_value(L_RESPONSE, '$.redirect_url');
+                    
+                    L_OUTPUT_FILE_BASE64 := GENERATE_RESPONSE_BODY(
+                        P_FILE_NAME     => L_OUTPUT_FILENAME,
+                        P_MIME_TYPE     => L_OUTPUT_FILE_MIME_TYPE,
+                        P_REDIRECT_URL  => L_REDIRECT_URL,
+                        P_DATA          => null
+                    );
+                ELSE
+                    -- If status is NOT 200, parse the error from the response
+                    L_ERROR_MESSAGES := PARSE_ERROR_CODE(APEX_WEB_SERVICE.G_STATUS_CODE);
+                    
+                    IF L_ERROR_MESSAGES IS NULL THEN
+                       -- Use the helper function to get the 'error' field from the API JSON
+                       L_ERROR_MESSAGES := PARSE_ERRORS(L_RESPONSE); 
+                    END IF;
+
+                    -- Send ONLY the error text string
+                    L_OUTPUT_FILE_BASE64 := L_ERROR_MESSAGES; 
+                END IF;
+
+                MAXPRINT_PLSQL_API_V2.PRINT_PAYLOAD(L_OUTPUT_FILE_BASE64);
+                
+                RETURN L_RETURN;
+
+            ELSIF ( L_ACTION = 'R' ) THEN
+
+                IF (L_OUTPUT_TYPE = 'M') THEN
+                    L_LINK := L_API_DEBUG;
+                ELSE
+                    L_LINK := L_API_RUN_REPORT;
+                END IF;
+                
+
+                BEGIN
+                    DEBUG('Maxprint Request Started', 3);
+
+                    L_OUTPUT_FILE_UTF8 := MAXPRINT_PLSQL_API_V2.MAXPRINT_API_CALL(
+                                P_URL => L_LINK, 
+                                P_API_KEY => L_API_KEY, 
+                                P_TEMPLATE => L_TEMPLATE_JSON,
+                                P_TEMPLATE_ID => L_TEMPLATE_ID,
+                                P_DATA => L_JSON, 
+                                P_OUTPUT_TYPE => L_OUTPUT_TYPE,
+                                P_WALLET_PATH => L_WALLET_PATH, 
+                                P_WALLET_PASSWORD => L_WALLET_KEY,
+                                P_DEBUG => APEX_APPLICATION.G_DEBUG, 
+                                P_DEVELOPMENT_MODE => L_DEVELOPMENT_MODE
+                            );
+
+                    DEBUG('Maxprint Rest Request Completed', 3);
+            
+                    IF ( APEX_WEB_SERVICE.G_STATUS_CODE = 200 OR L_OUTPUT_TYPE = 'M' ) THEN
+                        HTP.INIT;
+                        DEBUG('File Recieved', 3);
+                        DEBUG('Creating Response Body', 3);
+                        
+                        L_OUTPUT_FILE_BASE64 := GENERATE_RESPONSE_BODY(
+                            P_FILE_NAME     => L_OUTPUT_FILENAME || '.' ||  NVL((CASE WHEN L_OUTPUT_TYPE = 'M' THEN 'json' ELSE L_OUTPUT_TYPE END), 'pdf'), 
+                            P_MIME_TYPE     => L_OUTPUT_FILE_MIME_TYPE,
+                            P_REDIRECT_URL  => null,
+                            P_DATA          => L_OUTPUT_FILE_UTF8
+                        );
+
+                        MAXPRINT_PLSQL_API_V2.PRINT_PAYLOAD(L_OUTPUT_FILE_BASE64);
+            
+                    ELSE
+                        L_ERROR_MESSAGES     := PARSE_ERROR_CODE(APEX_WEB_SERVICE.G_STATUS_CODE);
+                        
+                        IF L_ERROR_MESSAGES IS NULL THEN
+                           L_ERROR_MESSAGES := INITCAP(NVL(REPLACE(REPLACE(PARSE_ERRORS(L_OUTPUT_FILE_UTF8), CHR(10), ''), CHR(13), ''), L_OUTPUT_FILE_UTF8));
+
+                        END IF;
+
+                        L_OUTPUT_FILE_BASE64 := L_ERROR_MESSAGES;
+                        MAXPRINT_PLSQL_API_V2.PRINT_PAYLOAD(L_OUTPUT_FILE_BASE64);
+                        
+                        DEBUG('Function Returned ' || APEX_WEB_SERVICE.G_STATUS_CODE || ',' || APEX_WEB_SERVICE.G_REASON_PHRASE, 2);
+
+                    END IF;
+
+                    RETURN L_RETURN;
+
+                END;
+
+            END IF;
+        END;
+
+END "MAXPRINT_UTILS_V2";
+/]]></n0:source>
+		</n0:createOraclePackageBody>
+	</changeSet>
+</databaseChangeLog>
