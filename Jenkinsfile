@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Pulls the clean, regenerated folders from your GitHub
+                // Pulls the clean, regenerated folders from your GitHub repository
                 checkout scm
             }
         }
@@ -23,7 +23,7 @@ pipeline {
                     sh """
                         ${SQLCL_PATH} ${DB_USER}/${DB_PASS}@${PROD_CONN} <<EOF
                         cd db
-                        -- Ensures a clean run after your manual deletions
+                        -- Ensures a clean run after your manual deletions of triggers
                         lb clear-checksums
                         lb update -changelog-file controller.xml
                         exit
@@ -43,21 +43,24 @@ EOF
                         set serveroutput on
                         declare
                             l_workspace_id number;
+                            -- CRITICAL: Force uppercase to prevent ORA-44001 invalid schema error
+                            l_schema varchar2(100) := upper('${DB_USER}'); 
                         begin
                             -- 1. Dynamically find the Workspace ID on this specific server
                             select workspace_id into l_workspace_id 
                               from apex_workspaces 
                              where workspace = '${WORKSPACE_NAME}';
                             
-                            -- 2. Force the session to the correct Workspace
+                            -- 2. Force the session to the correct Workspace context
                             apex_util.set_security_group_id(p_security_group_id => l_workspace_id);
                             
-                            -- 3. THE FIX: Overrides the hardcoded ID inside the export files
+                            -- 3. THE FIX: Overrides the hardcoded IDs inside the export files
                             apex_application_install.set_workspace_id(l_workspace_id);
                             apex_application_install.generate_offset;
-                            apex_application_install.set_schema('${DB_USER}');
+                            apex_application_install.set_schema(l_schema);
                             
                             dbms_output.put_line('Target Workspace ID forced to: ' || l_workspace_id);
+                            dbms_output.put_line('Target Schema set to: ' || l_schema);
                         end;
                         /
                         
