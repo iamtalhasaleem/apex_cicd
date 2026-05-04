@@ -21,20 +21,23 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'prod_db_creds',
                                                  passwordVariable: 'DB_PASS',
                                                  usernameVariable: 'DB_USER')]) {
-                    echo 'Generating Difference and Updating Production DB (Ignoring Metadata Tables)...'
+                    echo 'Cleaning old sync files and generating fresh Difference...'
                     sh """
+                        # Remove existing sync file to ensure we don't run old errors from previous failed builds
+                        rm -f db/prod_sync.xml
+                        
                         ${SQLCL_PATH} ${DB_USER}/${DB_PASS}@${PROD_CONN} <<EOF
-                        -- 1. Compare Prod to Dev and generate the 'prod_sync.xml'
-                        -- We exclude Liquibase internal tables to avoid ORA-00955 errors
+                        -- 1. Generate the DIFF with strict filters
+                        -- Focuses on business objects and ignores Liquibase internal metadata tables
                         lb diff-changelog \
                           -reference-url ${DEV_URL} \
                           -reference-username ${DB_USER} \
                           -reference-password ${DB_PASS} \
-                          -diff-types "tables,views,columns,indexes,foreignkeys,primarykeys,uniqueconstraints,data" \
+                          -diff-types "tables,columns,indexes,foreignkeys,primarykeys" \
                           -exclude-objects "DATABASECHANGELOG,DATABASECHANGELOGLOCK,DATABASECHANGELOG_ACTIONS" \
                           -output-file db/prod_sync.xml
                         
-                        -- 2. Apply the generated changes (including the Drop commands)
+                        -- 2. Apply the generated changes (this will execute the DROP commands)
                         lb update -changelog-file db/prod_sync.xml
                         
                         -- 3. Run the standard controller to ensure structural alignment
@@ -89,10 +92,10 @@ EOF
     }
     post {
         success {
-            echo 'Deployment completed successfully. All additions and deletions applied.'
+            echo 'Deployment completed successfully. Additions and deletions have been applied.'
         }
         failure {
-            echo 'Deployment failed. Check SQLcl logs for dependency or connection errors.'
+            echo 'Deployment failed. Please check the SQLcl console output for ORA errors.'
         }
     }
 }
