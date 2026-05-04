@@ -1,7 +1,7 @@
-prompt --application/pages/page_00002
+prompt --application/pages/page_00004
 begin
 --   Manifest
---     PAGE: 00002
+--     PAGE: 00004
 --   Manifest End
 wwv_flow_imp.component_begin (
  p_version_yyyy_mm_dd=>'2024.11.30'
@@ -12,10 +12,10 @@ wwv_flow_imp.component_begin (
 ,p_default_owner=>'MAXPRINT_DEMO'
 );
 wwv_flow_imp_page.create_page(
- p_id=>2
-,p_name=>'testing page for CICD'
-,p_alias=>'TESTING-PAGE-FOR-CICD'
-,p_step_title=>'testing page for CICD'
+ p_id=>4
+,p_name=>'page 2 for cicd testing'
+,p_alias=>'PAGE-2-FOR-CICD-TESTING'
+,p_step_title=>'page 2 for cicd testing'
 ,p_autocomplete_on_off=>'OFF'
 ,p_page_template_options=>'#DEFAULT#'
 ,p_protection_level=>'C'

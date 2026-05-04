@@ -11,6 +11,7 @@
   <include file="sequence/dept_seq_sequence.xml"/> 
   <include file="sequence/emp_seq_sequence.xml"/> 
   <include file="table/cicd_table.xml"/> 
+  <include file="table/cicd2_table.xml"/> 
   <include file="table/countries_table.xml"/> 
   <include file="table/customer_orders_table.xml"/> 
   <include file="table/demo_customers_table.xml"/> 
