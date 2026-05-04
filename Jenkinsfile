@@ -21,15 +21,17 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'prod_db_creds',
                                                  passwordVariable: 'DB_PASS',
                                                  usernameVariable: 'DB_USER')]) {
-                    echo 'Generating Difference and Updating Production DB...'
+                    echo 'Generating Difference and Updating Production DB (Ignoring Metadata Tables)...'
                     sh """
                         ${SQLCL_PATH} ${DB_USER}/${DB_PASS}@${PROD_CONN} <<EOF
                         -- 1. Compare Prod to Dev and generate the 'prod_sync.xml'
-                        -- This identifies objects deleted in Dev but still in Prod
+                        -- We exclude Liquibase internal tables to avoid ORA-00955 errors
                         lb diff-changelog \
                           -reference-url ${DEV_URL} \
                           -reference-username ${DB_USER} \
                           -reference-password ${DB_PASS} \
+                          -diff-types "tables,views,columns,indexes,foreignkeys,primarykeys,uniqueconstraints,data" \
+                          -exclude-objects "DATABASECHANGELOG,DATABASECHANGELOGLOCK,DATABASECHANGELOG_ACTIONS" \
                           -output-file db/prod_sync.xml
                         
                         -- 2. Apply the generated changes (including the Drop commands)
