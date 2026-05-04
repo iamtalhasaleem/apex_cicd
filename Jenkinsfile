@@ -1,4 +1,4 @@
-ipipeline {
+pipeline {
     agent any
     environment {
         SQLCL_PATH = '/opt/sqlcl/bin/sql'
