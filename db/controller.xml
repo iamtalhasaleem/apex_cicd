@@ -13,6 +13,7 @@
   <include file="table/cicd2_table.xml"/> 
   <include file="table/cicd3_table.xml"/> 
   <include file="table/cicd4_table.xml"/> 
+  <include file="table/cicd5_table.xml"/> 
   <include file="table/countries_table.xml"/> 
   <include file="table/customer_orders_table.xml"/> 
   <include file="table/demo_customers_table.xml"/> 
