@@ -97,7 +97,7 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_action_sequence=>10
 ,p_execute_on_page_init=>'N'
 ,p_action=>'PLUGIN_COM.PLUGIN.MAXPRINT_V2'
-,p_attribute_01=>'R'
+,p_attribute_01=>'C'
 ,p_attribute_02=>'SQL'
 ,p_attribute_03=>'J'
 ,p_attribute_05=>wwv_flow_string.join(wwv_flow_t_varchar2(
@@ -134,11 +134,7 @@ wwv_flow_imp_page.create_page_da_action(
 'JOIN demo_orders o ON c.customer_id = o.customer_id',
 'WHERE c.customer_id = 1 ',
 'AND o.order_id = 2;'))
-,p_attribute_07=>'T'
-,p_attribute_09=>'34b28c8e-05fa-4a09-af50-857a45ec3890'
 ,p_attribute_10=>'P1_DEPARTMENT'
-,p_attribute_11=>'pdf'
-,p_attribute_13=>'O'
 ,p_wait_for_result=>'Y'
 );
 wwv_flow_imp_page.create_page_da_event(
@@ -158,14 +154,10 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_action_sequence=>10
 ,p_execute_on_page_init=>'N'
 ,p_action=>'PLUGIN_COM.PLUGIN.MAXPRINT_V2'
-,p_attribute_01=>'R'
+,p_attribute_01=>'C'
 ,p_attribute_02=>'SQL'
 ,p_attribute_03=>'S'
 ,p_attribute_05=>'select EMPLOYEE_ID, SALARY from employees;'
-,p_attribute_07=>'T'
-,p_attribute_09=>'840911e8-f7a7-4ca3-883e-fea401dc0f67'
-,p_attribute_11=>'pdf'
-,p_attribute_13=>'O'
 ,p_wait_for_result=>'Y'
 );
 wwv_flow_imp.component_end;

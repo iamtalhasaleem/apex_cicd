@@ -131,7 +131,7 @@ wwv_flow_imp_shared.create_plugin_setting(
 ,p_plugin=>'PLUGIN_COM.PLUGIN.MAXPRINT_V2'
 ,p_attribute_01=>'https://appv2.maxprint.io/api/v1'
 ,p_attribute_02=>'5988oMGjEj0AAHQqoEyIay5nA0Ek2ZE9uynsak1nfhFkIdf6r48ljR68TP6UE50'
-,p_version_scn=>52841969
+,p_version_scn=>60980243
 );
 wwv_flow_imp.component_end;
 end;
