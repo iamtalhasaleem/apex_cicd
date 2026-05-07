@@ -101,16 +101,22 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_attribute_02=>'SQL'
 ,p_attribute_03=>'J'
 ,p_attribute_05=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'',
 'SELECT json_object(',
 '       ''customer_id''   VALUE c.customer_id,',
 '       ''customer_name'' VALUE c.cust_first_name || '' '' || c.cust_last_name,',
 '       ''email''         VALUE c.cust_email,',
+'       -- New Image Field --',
+'       ''profile_image'' VALUE (',
+'                               SELECT apex_web_service.blob2clobbase64(img.image_content)',
+'                               FROM image_store img',
+'                               WHERE img.id = 1',
+'                             ),',
+'       --------------------',
 '       ''phone''         VALUE c.phone_number1,',
 '       ''address''       VALUE c.cust_street_address1 || '', '' || c.cust_city,',
 '       ''order_id''      VALUE o.order_id,',
-'       ''order_date''    VALUE o.order_timestamp,',
-'    --    ''order_date''    VALUE CAST(o.order_timestamp AS VARCHAR2(30)),',
-'    --    ''order_date_to_char''    VALUE TO_CHAR(o.order_timestamp, ''YYYY-MM-DD''),',
+'       ''order_date''    VALUE CAST(o.order_timestamp AS VARCHAR2(30)),',
 '       ''order_total''   VALUE o.order_total,',
 '       ''items'' VALUE (',
 '         SELECT json_arrayagg(',
@@ -134,7 +140,6 @@ wwv_flow_imp_page.create_page_da_action(
 'JOIN demo_orders o ON c.customer_id = o.customer_id',
 'WHERE c.customer_id = 1 ',
 'AND o.order_id = 2;'))
-,p_attribute_10=>'P1_DEPARTMENT'
 ,p_wait_for_result=>'Y'
 );
 wwv_flow_imp_page.create_page_da_event(
@@ -157,7 +162,10 @@ wwv_flow_imp_page.create_page_da_action(
 ,p_attribute_01=>'C'
 ,p_attribute_02=>'SQL'
 ,p_attribute_03=>'S'
-,p_attribute_05=>'select EMPLOYEE_ID, SALARY from employees;'
+,p_attribute_05=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'SELECT apex_web_service.blob2clobbase64(img.image_content) as image',
+'                               FROM image_store img',
+'                               WHERE img.id = 2'))
 ,p_wait_for_result=>'Y'
 );
 wwv_flow_imp.component_end;

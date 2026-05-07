@@ -5,20 +5,19 @@
 	xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext" 
 	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
 	http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
-	<changeSet id="868588b04e27e4c93744cb561ac09ac264d533fe" author="(MAXPRINT_DEMO)-Generated" failOnError="false"   runOnChange="false" runAlways="false"  >
-		<n0:createSxmlObject objectName="CICD5" objectType="TABLE" ownerName="MAXPRINT_DEMO"  replaceIfExists="false" >
+	<changeSet id="e15e6b0e000028901b2000dcf0780019956c99b6" author="(MAXPRINT_DEMO)-Generated" failOnError="false"   runOnChange="false" runAlways="false"  >
+		<n0:createSxmlObject objectName="CICD10" objectType="TABLE" ownerName="MAXPRINT_DEMO"  replaceIfExists="false" >
 			<n0:source><![CDATA[
   <TABLE xmlns="http://xmlns.oracle.com/ku" version="1.0">
    <SCHEMA>%USER_NAME%</SCHEMA>
-   <NAME>CICD5</NAME>
+   <NAME>CICD10</NAME>
    <RELATIONAL_TABLE>
       <COL_LIST>
          <COL_LIST_ITEM>
-            <NAME>CICD5</NAME>
-            <DATATYPE>VARCHAR2</DATATYPE>
-            <LENGTH>1</LENGTH>
-            <CHAR_SEMANTICS></CHAR_SEMANTICS>
-            <COLLATE_NAME>USING_NLS_COMP</COLLATE_NAME>
+            <NAME>CICD10</NAME>
+            <DATATYPE>NUMBER</DATATYPE>
+            <PRECISION>1</PRECISION>
+            <SCALE>1</SCALE>
             <ANNOTATION_LIST></ANNOTATION_LIST>
          </COL_LIST_ITEM>
       </COL_LIST>
