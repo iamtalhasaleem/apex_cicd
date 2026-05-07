@@ -1,7 +1,8 @@
 pipeline {
     agent any
+    
     environment {
-        // Path to the updated SQLcl 25.4
+        // Path to the SQLcl executable
         SQLCL_PATH = '/opt/sqlcl/bin/sql'
         
         // Production Connection (Target)
@@ -10,6 +11,7 @@ pipeline {
         // Your APEX Workspace Name
         WORKSPACE_NAME = 'MAXPRINT_DEMO'
     }
+
     stages {
         stage('Checkout') {
             steps {
@@ -24,19 +26,20 @@ pipeline {
                     usernamePassword(credentialsId: 'prod_db_creds', passwordVariable: 'PROD_PASS', usernameVariable: 'PROD_USER')
                 ]) {
                     echo 'Applying Database Changes from GitHub...'
-                    sh """
+                    // Using single quotes (') for the SH block prevents the "Insecure Interpolation" warning
+                    sh '''
                         ${SQLCL_PATH} ${PROD_USER}/${PROD_PASS}@${PROD_CONN} <<EOF
                         whenever sqlerror exit failure
 
-                        -- 1. Apply the manually generated sync file (handles deletions/updates)
+                        -- 1. Apply the manually generated sync file (handles deletions/drops)
                         lb update -changelog-file db_sync.xml
 
-                        -- 2. Apply the full schema objects (Source of Truth)
+                        -- 2. Apply the full schema objects (Ensures Source of Truth matches Dev)
                         cd db
                         lb update -changelog-file controller.xml
                         exit
 EOF
-                    """
+                    '''
                 }
             }
         }
@@ -47,7 +50,7 @@ EOF
                     usernamePassword(credentialsId: 'prod_db_creds', passwordVariable: 'DB_PASS', usernameVariable: 'DB_USER')
                 ]) {
                     echo 'Deploying APEX Application Split-Export...'
-                    sh """
+                    sh '''
                         ${SQLCL_PATH} ${DB_USER}/${DB_PASS}@${PROD_CONN} <<EOF
                         whenever sqlerror exit failure
                         set serveroutput on
@@ -67,15 +70,16 @@ EOF
                         end;
                         /
 
-                        -- Run the master install script from the repo
+                        -- Run the master install script from the repo (split export)
                         @apex/f103/install.sql
                         exit
 EOF
-                    """
+                    '''
                 }
             }
         }
     }
+
     post {
         success {
             echo 'Deployment Successful: Production is now updated with GitHub artifacts.'
