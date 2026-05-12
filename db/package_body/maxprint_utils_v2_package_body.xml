@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog 
-	xmlns="http://www.liquibase.org/xml/ns/dbchangelog" 
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-	xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext" 
-	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
-	http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
-	<changeSet id="9005833f1a1cdc66562a11a308d1bed6e7cd5fa1" author="(MAXPRINT_DEMO)-Generated" failOnError="false"   runOnChange="false" runAlways="false"  >
-		<n0:createOraclePackageBody objectName="MAXPRINT_UTILS_V2" objectType="PACKAGE_BODY" ownerName="MAXPRINT_DEMO"  replaceIfExists="false" >
-			<n0:source><![CDATA[CREATE OR REPLACE EDITIONABLE PACKAGE BODY "%USER_NAME%"."MAXPRINT_UTILS_V2" AS
+ xmlns="http://www.liquibase.org/xml/ns/dbchangelog" 
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+ xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext" 
+ xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
+ http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+ <changeSet id="9005833f1a1cdc66562a11a308d1bed6e7cd5fa1" author="(MAXPRINT_DEMO)-Generated" failOnError="true"    runOnChange="false"  runAlways="false"  runInTransaction="false"  >
+  <n0:createOraclePackageBody objectName="MAXPRINT_UTILS_V2" objectType="PACKAGE_BODY" ownerName="MAXPRINT_DEMO"  replaceIfExists="false" >
+    <n0:source><![CDATA[CREATE OR REPLACE EDITIONABLE PACKAGE BODY "%USER_NAME%"."MAXPRINT_UTILS_V2" AS
 
     APPID       VARCHAR2(50)  := V('APP_ID');
     WORKSPACEID VARCHAR2(50)  := V('WORKSPACE_ID');
@@ -450,6 +450,6 @@
 
 END "MAXPRINT_UTILS_V2";
 /]]></n0:source>
-		</n0:createOraclePackageBody>
-	</changeSet>
+      </n0:createOraclePackageBody>
+ </changeSet>
 </databaseChangeLog>

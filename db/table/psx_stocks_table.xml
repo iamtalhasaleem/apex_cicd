@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog 
-	xmlns="http://www.liquibase.org/xml/ns/dbchangelog" 
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-	xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext" 
-	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
-	http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
-	<changeSet id="a018a8768aaaa445105b92e0403e869f41d73f11" author="(MAXPRINT_DEMO)-Generated" failOnError="false"   runOnChange="false" runAlways="false"  >
-		<n0:createSxmlObject objectName="PSX_STOCKS" objectType="TABLE" ownerName="MAXPRINT_DEMO"  replaceIfExists="false" >
-			<n0:source><![CDATA[
+ xmlns="http://www.liquibase.org/xml/ns/dbchangelog" 
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+ xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext" 
+ xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
+ http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+ <changeSet id="a018a8768aaaa445105b92e0403e869f41d73f11" author="(MAXPRINT_DEMO)-Generated" failOnError="true"    runOnChange="false"  runAlways="false"  runInTransaction="false"  >
+  <n0:createSxmlObject objectName="PSX_STOCKS" objectType="TABLE" ownerName="MAXPRINT_DEMO"  replaceIfExists="false" >
+    <n0:source><![CDATA[
   <TABLE xmlns="http://xmlns.oracle.com/ku" version="1.0">
    <SCHEMA>%USER_NAME%</SCHEMA>
    <NAME>PSX_STOCKS</NAME>
@@ -186,6 +186,6 @@
       <ANNOTATION_LIST></ANNOTATION_LIST>
    </RELATIONAL_TABLE>
 </TABLE>]]></n0:source>
-		</n0:createSxmlObject>
-	</changeSet>
+      </n0:createSxmlObject>
+ </changeSet>
 </databaseChangeLog>

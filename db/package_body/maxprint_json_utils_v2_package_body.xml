@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog 
-	xmlns="http://www.liquibase.org/xml/ns/dbchangelog" 
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-	xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext" 
-	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
-	http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
-	<changeSet id="21db770b73ae211f75d0c49df9f25c76b453f112" author="(MAXPRINT_DEMO)-Generated" failOnError="false"   runOnChange="false" runAlways="false"  >
-		<n0:createOraclePackageBody objectName="MAXPRINT_JSON_UTILS_V2" objectType="PACKAGE_BODY" ownerName="MAXPRINT_DEMO"  replaceIfExists="false" >
-			<n0:source><![CDATA[CREATE OR REPLACE EDITIONABLE PACKAGE BODY "%USER_NAME%"."MAXPRINT_JSON_UTILS_V2" AS
+ xmlns="http://www.liquibase.org/xml/ns/dbchangelog" 
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+ xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext" 
+ xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
+ http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+ <changeSet id="21db770b73ae211f75d0c49df9f25c76b453f112" author="(MAXPRINT_DEMO)-Generated" failOnError="true"    runOnChange="false"  runAlways="false"  runInTransaction="false"  >
+  <n0:createOraclePackageBody objectName="MAXPRINT_JSON_UTILS_V2" objectType="PACKAGE_BODY" ownerName="MAXPRINT_DEMO"  replaceIfExists="false" >
+    <n0:source><![CDATA[CREATE OR REPLACE EDITIONABLE PACKAGE BODY "%USER_NAME%"."MAXPRINT_JSON_UTILS_V2" AS
 
     PROCEDURE DEBUG ( P_MESSAGE IN VARCHAR2, P_LEVEL IN NUMBER) IS
         BEGIN
@@ -418,6 +418,6 @@
 
 END "MAXPRINT_JSON_UTILS_V2";
 /]]></n0:source>
-		</n0:createOraclePackageBody>
-	</changeSet>
+      </n0:createOraclePackageBody>
+ </changeSet>
 </databaseChangeLog>

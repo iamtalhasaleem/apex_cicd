@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog 
-	xmlns="http://www.liquibase.org/xml/ns/dbchangelog" 
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-	xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext" 
-	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
-	http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
-	<changeSet id="8038e7a207b94e60b7675dcf143d2dc56ed716d2" author="(MAXPRINT_DEMO)-Generated" failOnError="false"   runOnChange="false" runAlways="false"  >
-		<n0:createSxmlObject objectName="COUNTRIES" objectType="TABLE" ownerName="MAXPRINT_DEMO"  replaceIfExists="false" >
-			<n0:source><![CDATA[
+ xmlns="http://www.liquibase.org/xml/ns/dbchangelog" 
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+ xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext" 
+ xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
+ http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+ <changeSet id="8038e7a207b94e60b7675dcf143d2dc56ed716d2" author="(MAXPRINT_DEMO)-Generated" failOnError="true"    runOnChange="false"  runAlways="false"  runInTransaction="false"  >
+  <n0:createSxmlObject objectName="COUNTRIES" objectType="TABLE" ownerName="MAXPRINT_DEMO"  replaceIfExists="false" >
+    <n0:source><![CDATA[
   <TABLE xmlns="http://xmlns.oracle.com/ku" version="1.0">
    <SCHEMA>%USER_NAME%</SCHEMA>
    <NAME>COUNTRIES</NAME>
@@ -75,6 +75,6 @@
       <ANNOTATION_LIST></ANNOTATION_LIST>
    </RELATIONAL_TABLE>
 </TABLE>]]></n0:source>
-		</n0:createSxmlObject>
-	</changeSet>
+      </n0:createSxmlObject>
+ </changeSet>
 </databaseChangeLog>

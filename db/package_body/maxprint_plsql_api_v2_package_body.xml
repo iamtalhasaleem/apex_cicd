@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog 
-	xmlns="http://www.liquibase.org/xml/ns/dbchangelog" 
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-	xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext" 
-	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
-	http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
-	<changeSet id="28fd81b2b0cb04aa887ab6dd3f12fa782814aa57" author="(MAXPRINT_DEMO)-Generated" failOnError="false"   runOnChange="false" runAlways="false"  >
-		<n0:createOraclePackageBody objectName="MAXPRINT_PLSQL_API_V2" objectType="PACKAGE_BODY" ownerName="MAXPRINT_DEMO"  replaceIfExists="false" >
-			<n0:source><![CDATA[CREATE OR REPLACE EDITIONABLE PACKAGE BODY "%USER_NAME%"."MAXPRINT_PLSQL_API_V2" as
+ xmlns="http://www.liquibase.org/xml/ns/dbchangelog" 
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+ xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext" 
+ xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
+ http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+ <changeSet id="28fd81b2b0cb04aa887ab6dd3f12fa782814aa57" author="(MAXPRINT_DEMO)-Generated" failOnError="true"    runOnChange="false"  runAlways="false"  runInTransaction="false"  >
+  <n0:createOraclePackageBody objectName="MAXPRINT_PLSQL_API_V2" objectType="PACKAGE_BODY" ownerName="MAXPRINT_DEMO"  replaceIfExists="false" >
+    <n0:source><![CDATA[CREATE OR REPLACE EDITIONABLE PACKAGE BODY "%USER_NAME%"."MAXPRINT_PLSQL_API_V2" as
    
     procedure Print_Payload(P_Text in out nocopy clob) is
         V_TEMP   varchar2(4000);
@@ -292,6 +292,6 @@
 
 end "MAXPRINT_PLSQL_API_V2";
 /]]></n0:source>
-		</n0:createOraclePackageBody>
-	</changeSet>
+      </n0:createOraclePackageBody>
+ </changeSet>
 </databaseChangeLog>

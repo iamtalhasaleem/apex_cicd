@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog 
-	xmlns="http://www.liquibase.org/xml/ns/dbchangelog" 
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-	xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext" 
-	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
-	http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
-	<changeSet id="f45f259c1b20a91f9d0fb5d22af1e75307a88f8e" author="(MAXPRINT_DEMO)-Generated" failOnError="false"   runOnChange="false" runAlways="false"  >
-		<n0:createOraclePackageSpec objectName="MAXPRINT_UTILS_V2" objectType="PACKAGE_SPEC" ownerName="MAXPRINT_DEMO"  replaceIfExists="false" >
-			<n0:source><![CDATA[CREATE OR REPLACE EDITIONABLE PACKAGE "%USER_NAME%"."MAXPRINT_UTILS_V2" AS
+ xmlns="http://www.liquibase.org/xml/ns/dbchangelog" 
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+ xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext" 
+ xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
+ http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+ <changeSet id="f45f259c1b20a91f9d0fb5d22af1e75307a88f8e" author="(MAXPRINT_DEMO)-Generated" failOnError="true"    runOnChange="false"  runAlways="false"  runInTransaction="false"  >
+  <n0:createOraclePackageSpec objectName="MAXPRINT_UTILS_V2" objectType="PACKAGE_SPEC" ownerName="MAXPRINT_DEMO"  replaceIfExists="false" >
+    <n0:source><![CDATA[CREATE OR REPLACE EDITIONABLE PACKAGE "%USER_NAME%"."MAXPRINT_UTILS_V2" AS
     
     FUNCTION GET_FILES_FROM_URL (
         P_URL IN VARCHAR2, 
@@ -24,6 +24,6 @@
 
 END "MAXPRINT_UTILS_V2";
 /]]></n0:source>
-		</n0:createOraclePackageSpec>
-	</changeSet>
+      </n0:createOraclePackageSpec>
+ </changeSet>
 </databaseChangeLog>

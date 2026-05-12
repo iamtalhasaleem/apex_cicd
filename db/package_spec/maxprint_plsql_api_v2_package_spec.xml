@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog 
-	xmlns="http://www.liquibase.org/xml/ns/dbchangelog" 
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-	xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext" 
-	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
-	http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
-	<changeSet id="32219e43c437abfb711190a162c97654be106eb1" author="(MAXPRINT_DEMO)-Generated" failOnError="false"   runOnChange="false" runAlways="false"  >
-		<n0:createOraclePackageSpec objectName="MAXPRINT_PLSQL_API_V2" objectType="PACKAGE_SPEC" ownerName="MAXPRINT_DEMO"  replaceIfExists="false" >
-			<n0:source><![CDATA[CREATE OR REPLACE EDITIONABLE PACKAGE "%USER_NAME%"."MAXPRINT_PLSQL_API_V2" AS
+ xmlns="http://www.liquibase.org/xml/ns/dbchangelog" 
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+ xmlns:n0="http://www.oracle.com/xml/ns/dbchangelog-ext" 
+ xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
+ http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+ <changeSet id="32219e43c437abfb711190a162c97654be106eb1" author="(MAXPRINT_DEMO)-Generated" failOnError="true"    runOnChange="false"  runAlways="false"  runInTransaction="false"  >
+  <n0:createOraclePackageSpec objectName="MAXPRINT_PLSQL_API_V2" objectType="PACKAGE_SPEC" ownerName="MAXPRINT_DEMO"  replaceIfExists="false" >
+    <n0:source><![CDATA[CREATE OR REPLACE EDITIONABLE PACKAGE "%USER_NAME%"."MAXPRINT_PLSQL_API_V2" AS
     v_url              varchar2(100)   := 'https://appv2.maxprint.io/api/v1';
     v_report_context   varchar2(100)   := '/report/run/template/';
     v_app_id           varchar2(50)    := v('APP_ID');
@@ -71,6 +71,6 @@
     ) RETURN blob; 
 end "MAXPRINT_PLSQL_API_V2";
 /]]></n0:source>
-		</n0:createOraclePackageSpec>
-	</changeSet>
+      </n0:createOraclePackageSpec>
+ </changeSet>
 </databaseChangeLog>
